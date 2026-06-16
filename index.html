@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0a0a" />
+<title>ArriveO'Clock</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   ArriveO'Clock — Premium Monochrome Design System
+   Strict palette: pure black, pure white, grayscale ramp only.
+   State is expressed through weight / contrast / outline / motion.
+   ===================================================================== */
+
+:root {
+  /* ---- Grayscale ramp (light theme defaults) ---- */
+  --ink-1000: #000000;
+  --ink-900:  #0a0a0a;
+  --ink-800:  #161616;
+  --ink-700:  #2a2a2a;
+  --ink-600:  #444444;
+  --ink-500:  #6b6b6b;
+  --ink-400:  #8e8e8e;
+  --ink-300:  #b4b4b4;
+  --ink-200:  #d4d4d4;
+  --ink-150:  #e4e4e4;
+  --ink-100:  #efefef;
+  --ink-50:   #f6f6f6;
+  --paper:    #ffffff;
+
+  /* ---- Semantic surface tokens (remapped per theme) ---- */
+  --bg:            var(--ink-100);
+  --surface:       var(--paper);
+  --surface-2:     var(--ink-50);
+  --surface-sunk:  var(--ink-100);
+  --text:          var(--ink-900);
+  --text-2:        var(--ink-500);
+  --text-3:        var(--ink-400);
+  --line:          var(--ink-150);
+  --line-strong:   var(--ink-300);
+  --accent:        var(--ink-900);   /* "color" accent = ink */
+  --accent-text:   var(--paper);
+  --scrim:         rgba(0,0,0,.42);
+
+  /* ---- Map palette (monochrome cartography) ---- */
+  --map-land:    #e9e9e9;
+  --map-land-2:  #e0e0e0;
+  --map-block:   #f3f3f3;
+  --map-water:   #cfcfcf;
+  --map-road:    #ffffff;
+  --map-road-mj: #c4c4c4;
+  --map-label:   #8a8a8a;
+  --route:       #0a0a0a;
+  --route-halo:  #ffffff;
+
+  /* ---- Spacing scale (4pt base) ---- */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-7: 32px; --s-8: 40px;
+  --s-9: 48px; --s-10: 64px;
+
+  /* ---- Radius scale ---- */
+  --r-1: 8px; --r-2: 12px; --r-3: 16px; --r-4: 22px; --r-5: 28px; --r-pill: 999px;
+
+  /* ---- Type scale ---- */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-text: 'Inter', system-ui, sans-serif;
+  --t-xs: 12px; --t-sm: 13px; --t-base: 15px; --t-md: 17px;
+  --t-lg: 20px; --t-xl: 26px; --t-2xl: 34px; --t-3xl: 46px;
+
+  /* ---- Elevation (grayscale shadow, no color crutch) ---- */
+  --e-1: 0 1px 2px rgba(0,0,0,.06), 0 1px 1px rgba(0,0,0,.04);
+  --e-2: 0 4px 14px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.05);
+  --e-3: 0 12px 34px rgba(0,0,0,.14), 0 4px 10px rgba(0,0,0,.07);
+  --e-sheet: 0 -8px 40px rgba(0,0,0,.16);
+
+  /* ---- Motion ---- */
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --ease-spring: cubic-bezier(.34,1.56,.64,1);
+  --dur-1: .14s; --dur-2: .26s; --dur-3: .42s;
+}
+
+[data-theme="dark"] {
+  --bg:            #000000;
+  --surface:       #121212;
+  --surface-2:     #1c1c1c;
+  --surface-sunk:  #0a0a0a;
+  --text:          #f4f4f4;
+  --text-2:        #9a9a9a;
+  --text-3:        #6e6e6e;
+  --line:          #262626;
+  --line-strong:   #3a3a3a;
+  --accent:        #ffffff;
+  --accent-text:   #0a0a0a;
+  --scrim:         rgba(0,0,0,.6);
+
+  --map-land:    #161616;
+  --map-land-2:  #1d1d1d;
+  --map-block:   #101010;
+  --map-water:   #242424;
+  --map-road:    #2e2e2e;
+  --map-road-mj: #404040;
+  --map-label:   #7a7a7a;
+  --route:       #ffffff;
+  --route-halo:  #000000;
+
+  --e-1: 0 1px 2px rgba(0,0,0,.5);
+  --e-2: 0 4px 14px rgba(0,0,0,.55);
+  --e-3: 0 12px 34px rgba(0,0,0,.65);
+  --e-sheet: 0 -8px 40px rgba(0,0,0,.6);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-text);
+  background: var(--ink-700);
+  color: var(--text);
+  font-size: var(--t-base);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+input { font: inherit; }
+::selection { background: var(--text); color: var(--surface); }
+
+/* Monochrome scrollbar */
+* { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+*::-webkit-scrollbar { width: 7px; height: 7px; }
+*::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 99px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------------------------------------------------------------------
+   App shell — phone frame on large screens, full-bleed on phones
+   --------------------------------------------------------------------- */
+.stage {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(120% 80% at 50% -10%, var(--ink-600), var(--ink-800) 70%);
+}
+.app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 440px;
+  max-height: 940px;
+  background: var(--bg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+@media (min-width: 480px) {
+  .app {
+    border-radius: 44px;
+    box-shadow: 0 40px 120px rgba(0,0,0,.55), 0 0 0 11px #0b0b0b, 0 0 0 13px #1f1f1f;
+    margin: 18px;
+    height: calc(100% - 36px);
+  }
+}
+@media (min-width: 1100px) {
+  .stage { gap: 0; }
+}
+
+/* ---------------------------------------------------------------------
+   Views
+   --------------------------------------------------------------------- */
+.view {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  background: var(--bg);
+  z-index: 1;
+}
+.view.active { display: flex; animation: viewIn var(--dur-2) var(--ease); }
+.view.full { z-index: 50; } /* overlays like onboarding/settings */
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(8px) scale(.995); }
+  to   { opacity: 1; transform: none; }
+}
+.view-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+/* ---------------------------------------------------------------------
+   Brand wordmark + logo mark (abstract pin + clock)
+   --------------------------------------------------------------------- */
+.brand { display: inline-flex; align-items: center; gap: var(--s-2); }
+.mark { width: 26px; height: 26px; display: block; flex: none; }
+.mark .pin { fill: var(--text); }
+.mark .face { stroke: var(--surface); }
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  font-size: var(--t-md);
+  color: var(--text);
+}
+.brand-name b { font-weight: 700; }
+
+/* ---------------------------------------------------------------------
+   Top bar
+   --------------------------------------------------------------------- */
+.topbar {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--s-4);
+  gap: var(--s-3);
+  z-index: 30;
+  position: relative;
+}
+.topbar.floating {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding-top: max(var(--s-2), env(safe-area-inset-top));
+}
+.icon-btn {
+  width: 42px; height: 42px;
+  display: grid; place-items: center;
+  border-radius: var(--r-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--e-1);
+  transition: transform var(--dur-1) var(--ease), background var(--dur-1);
+}
+.icon-btn:active { transform: scale(.93); background: var(--surface-2); }
+.icon-btn svg { width: 21px; height: 21px; }
+.avatar {
+  width: 42px; height: 42px; border-radius: var(--r-pill);
+  background: var(--ink-800); color: #fff;
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 600; font-size: var(--t-sm);
+  border: 1px solid var(--line); box-shadow: var(--e-1);
+  overflow: hidden;
+}
+[data-theme="dark"] .avatar { background: var(--ink-200); color: #000; }
+
+/* Generic icon stroke */
+.ic { stroke: var(--text); stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ic-fill { fill: var(--text); stroke: none; }
+
+/* ---------------------------------------------------------------------
+   MAP — monochrome SVG cartography
+   --------------------------------------------------------------------- */
+.map {
+  position: absolute; inset: 0;
+  background: var(--map-land);
+  overflow: hidden;
+}
+.map > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.map .grain {
+  position: absolute; inset: -20%;
+  background-image:
+    radial-gradient(var(--map-land-2) .6px, transparent .6px);
+  background-size: 9px 9px;
+  opacity: .5;
+  pointer-events: none;
+}
+.map-fade {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 38%;
+  background: linear-gradient(to top, var(--bg), transparent);
+  pointer-events: none;
+}
+.map-fade.top {
+  top: 0; bottom: auto; height: 22%;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 70%, transparent), transparent);
+}
+
+/* route line dash animation */
+.route-line { stroke: var(--route); fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.route-halo { stroke: var(--route-halo); fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.route-live .route-dash {
+  stroke-dasharray: 2 14;
+  animation: dashMove 1s linear infinite;
+}
+@keyframes dashMove { to { stroke-dashoffset: -16; } }
+
+/* map pins */
+.pin-mark { transform-box: fill-box; transform-origin: center bottom; }
+.dot-here {
+  animation: pulseHere 2.4s var(--ease) infinite;
+}
+@keyframes pulseHere { 0%,100%{ opacity:.25; r:18 } 50%{ opacity:0; r:30 } }
+
+/* ---------------------------------------------------------------------
+   Search field
+   --------------------------------------------------------------------- */
+.searchbar {
+  display: flex; align-items: center; gap: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 0 var(--s-3) 0 var(--s-4);
+  height: 54px;
+  box-shadow: var(--e-2);
+}
+.searchbar svg { width: 20px; height: 20px; flex: none; }
+.searchbar input {
+  flex: 1; border: none; background: none; outline: none;
+  font-size: var(--t-base); color: var(--text); font-weight: 500;
+  letter-spacing: -.01em;
+}
+.searchbar input::placeholder { color: var(--text-3); font-weight: 600; letter-spacing: .01em; }
+.searchbar .kbd {
+  font-size: var(--t-xs); color: var(--text-3); border: 1px solid var(--line);
+  border-radius: var(--r-1); padding: 3px 7px; font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------
+   Bottom sheet / shortcut grid (home)
+   --------------------------------------------------------------------- */
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: var(--surface);
+  border-radius: var(--r-5) var(--r-5) 0 0;
+  box-shadow: var(--e-sheet);
+  border-top: 1px solid var(--line);
+  padding: var(--s-3) var(--s-4) calc(var(--s-4) + var(--nav-h, 64px));
+  z-index: 20;
+  transform: translateY(0);
+  transition: transform var(--dur-3) var(--ease-spring);
+  touch-action: none;
+}
+.grip {
+  width: 38px; height: 5px; border-radius: 99px;
+  background: var(--line-strong); margin: 2px auto var(--s-3);
+}
+.sheet-title {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: var(--s-3);
+}
+.sheet-title h2 {
+  font-family: var(--font-display); font-size: var(--t-md);
+  font-weight: 600; letter-spacing: -.02em;
+}
+.sheet-title span { font-size: var(--t-sm); color: var(--text-2); font-weight: 500; }
+
+.tile-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3);
+}
+.tile {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--surface);
+  padding: var(--s-4);
+  min-height: 112px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  transition: transform var(--dur-1) var(--ease), background var(--dur-1), border-color var(--dur-1);
+  overflow: hidden;
+}
+.tile:active { transform: scale(.97); background: var(--surface-2); }
+.tile .tile-ic {
+  width: 40px; height: 40px; border-radius: var(--r-2);
+  display: grid; place-items: center;
+  background: var(--surface-2); border: 1px solid var(--line);
+}
+.tile .tile-ic svg { width: 22px; height: 22px; }
+.tile h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--t-base); letter-spacing: -.01em; }
+.tile p { font-size: var(--t-xs); color: var(--text-2); margin-top: 2px; }
+.tile.feature {
+  grid-column: span 2;
+  background: var(--accent); color: var(--accent-text);
+  border-color: var(--accent);
+  flex-direction: row; align-items: center; gap: var(--s-4); min-height: 92px;
+  /* Flip icons (which read var(--text)) to the on-accent colour via inheritance. */
+  --text: var(--accent-text);
+}
+.tile.feature .tile-ic { background: color-mix(in srgb, var(--accent-text) 14%, transparent); border-color: color-mix(in srgb, var(--accent-text) 22%, transparent); }
+.tile.feature .tile-ic .ic { stroke: var(--accent-text); }
+.tile.feature h3, .tile.feature p { color: var(--accent-text); }
+.tile.feature p { opacity: .7; }
+.tile.feature .go { margin-left: auto; }
+.tile.feature .go svg { width: 22px; height: 22px; stroke: var(--accent-text); }
+.tile .badge {
+  position: absolute; top: var(--s-3); right: var(--s-3);
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-2);
+  border: 1px solid var(--line); border-radius: var(--r-pill);
+  padding: 3px 8px;
+}
+
+/* ---------------------------------------------------------------------
+   Bottom navigation
+   --------------------------------------------------------------------- */
+.tabbar {
+  --nav-h: 66px;
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: calc(66px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex; align-items: stretch;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border-top: 1px solid var(--line);
+  z-index: 40;
+}
+.tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; color: var(--text-3);
+  transition: color var(--dur-1);
+  position: relative;
+}
+.tab svg { width: 24px; height: 24px; }
+.tab .ic { stroke: currentColor; }
+.tab span { font-size: 10.5px; font-weight: 600; letter-spacing: .01em; }
+.tab.active { color: var(--text); }
+.tab.active::before {
+  content: ""; position: absolute; top: 0; width: 26px; height: 3px;
+  background: var(--text); border-radius: 0 0 99px 99px;
+}
+.tab:active svg { transform: scale(.88); transition: transform var(--dur-1); }
+
+/* ---------------------------------------------------------------------
+   Section header (interior screens)
+   --------------------------------------------------------------------- */
+.page-head {
+  padding: var(--s-3) var(--s-4) var(--s-3);
+  display: flex; align-items: center; gap: var(--s-3);
+}
+.page-head h1 {
+  font-family: var(--font-display); font-size: var(--t-lg);
+  font-weight: 600; letter-spacing: -.02em;
+}
+.back-btn { width: 40px; height: 40px; margin-left: -6px; }
+
+/* ---------------------------------------------------------------------
+   Search screen
+   --------------------------------------------------------------------- */
+.quick-row { display: flex; gap: var(--s-2); padding: var(--s-1) var(--s-4) var(--s-4); }
+.chip {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: var(--s-3) var(--s-2);
+  border: 1px solid var(--line); border-radius: var(--r-2);
+  background: var(--surface); transition: transform var(--dur-1), background var(--dur-1);
+}
+.chip:active { transform: scale(.95); background: var(--surface-2); }
+.chip .c-ic { width: 36px; height: 36px; border-radius: var(--r-pill); background: var(--surface-2); display: grid; place-items: center; border: 1px solid var(--line); }
+.chip .c-ic svg { width: 19px; height: 19px; }
+.chip span { font-size: var(--t-sm); font-weight: 600; }
+
+.list-label {
+  padding: var(--s-2) var(--s-4); display: flex; justify-content: space-between; align-items: center;
+}
+.list-label .lbl { font-size: var(--t-xs); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+.recent-item {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--line);
+  transition: background var(--dur-1);
+}
+.recent-item:active { background: var(--surface-2); }
+.recent-item .r-ic {
+  width: 40px; height: 40px; border-radius: var(--r-2); flex: none;
+  background: var(--surface-2); border: 1px solid var(--line);
+  display: grid; place-items: center;
+}
+.recent-item .r-ic svg { width: 19px; height: 19px; }
+.recent-item .r-body { flex: 1; min-width: 0; }
+.recent-item .r-body .t { font-weight: 600; font-size: var(--t-base); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-item .r-body .s { font-size: var(--t-sm); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-item .r-meta { font-size: var(--t-xs); color: var(--text-3); font-variant-numeric: tabular-nums; flex: none; }
+
+.text-link {
+  display: block; text-align: center; padding: var(--s-5);
+  font-weight: 600; font-size: var(--t-sm);
+  text-decoration: underline; text-underline-offset: 3px;
+  color: var(--text);
+}
+
+/* ---------------------------------------------------------------------
+   Route confirmation — bottom card
+   --------------------------------------------------------------------- */
+.route-card {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: var(--surface);
+  border-radius: var(--r-5) var(--r-5) 0 0;
+  box-shadow: var(--e-sheet);
+  border-top: 1px solid var(--line);
+  padding: var(--s-3) var(--s-4) calc(var(--s-5) + env(safe-area-inset-bottom));
+  z-index: 20;
+}
+.route-rows { margin: var(--s-2) 0 var(--s-4); position: relative; }
+.route-rows::before {
+  content: ""; position: absolute; left: 13px; top: 24px; bottom: 24px;
+  width: 2px; background: repeating-linear-gradient(var(--line-strong) 0 3px, transparent 3px 7px);
+}
+.r-node { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) 0; position: relative; }
+.r-node .glyph { width: 28px; height: 28px; flex: none; display: grid; place-items: center; z-index: 1; }
+.r-node .glyph .o { width: 13px; height: 13px; border-radius: 50%; border: 3px solid var(--text); background: var(--surface); }
+.r-node .glyph svg { width: 22px; height: 22px; }
+.r-node .label { flex: 1; min-width: 0; }
+.r-node .label .k { font-size: var(--t-xs); color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .07em; }
+.r-node .label .v { font-weight: 600; font-size: var(--t-base); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.swap-btn { width: 40px; height: 40px; }
+.swap-btn svg { width: 20px; height: 20px; }
+
+.mode-row { display: flex; gap: var(--s-2); margin-bottom: var(--s-4); }
+.mode {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: var(--s-3) 0; border: 1px solid var(--line); border-radius: var(--r-2);
+  background: var(--surface); transition: all var(--dur-1) var(--ease);
+  position: relative;
+}
+.mode svg { width: 22px; height: 22px; }
+.mode .m-eta { font-size: var(--t-xs); font-weight: 600; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.mode.active { background: var(--accent); border-color: var(--accent); --text: var(--accent-text); }
+.mode.active .ic { stroke: var(--accent-text); }
+.mode.active .m-eta { color: var(--accent-text); }
+.mode:active { transform: scale(.95); }
+
+.stat-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s-4) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  margin-bottom: var(--s-4);
+}
+.stat .num { font-family: var(--font-display); font-weight: 700; font-size: var(--t-xl); letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.stat .lab { font-size: var(--t-xs); color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-top: 5px; }
+.stat-sep { width: 1px; align-self: stretch; background: var(--line); }
+
+.btn-primary {
+  width: 100%; height: 58px; border-radius: var(--r-3);
+  background: var(--accent); color: var(--accent-text);
+  font-family: var(--font-display); font-weight: 600; font-size: var(--t-md);
+  letter-spacing: -.01em;
+  display: flex; align-items: center; justify-content: center; gap: var(--s-2);
+  transition: transform var(--dur-1) var(--ease), filter var(--dur-1);
+  box-shadow: var(--e-2);
+}
+.btn-primary:active { transform: scale(.98); filter: brightness(.85); }
+.btn-primary svg { width: 22px; height: 22px; }
+.btn-primary .ic { stroke: var(--accent-text); }
+.btn-secondary {
+  width: 100%; height: 50px; border-radius: var(--r-3);
+  border: 1px solid var(--line-strong); background: var(--surface);
+  font-weight: 600; font-size: var(--t-base);
+  display: flex; align-items: center; justify-content: center; gap: var(--s-2);
+  margin-top: var(--s-2); transition: transform var(--dur-1), background var(--dur-1);
+}
+.btn-secondary:active { transform: scale(.98); background: var(--surface-2); }
+.btn-secondary svg { width: 19px; height: 19px; }
+.hint { text-align: center; font-size: var(--t-xs); color: var(--text-3); margin-top: var(--s-3); }
+
+/* ---------------------------------------------------------------------
+   Active journey — status banner
+   --------------------------------------------------------------------- */
+.status-banner {
+  position: absolute; top: max(var(--s-3), env(safe-area-inset-top)); left: var(--s-3); right: var(--s-3);
+  background: var(--accent); color: var(--accent-text);
+  border-radius: var(--r-4); padding: var(--s-4);
+  box-shadow: var(--e-3);
+  z-index: 30;
+  animation: bannerDrop var(--dur-3) var(--ease-spring);
+}
+@keyframes bannerDrop { from { transform: translateY(-130%); } to { transform: none; } }
+.status-banner .sb-top { display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-sm); font-weight: 500; opacity: .85; margin-bottom: var(--s-3); }
+.status-banner .sb-top svg { width: 16px; height: 16px; }
+.status-banner .sb-top .ic { stroke: var(--accent-text); }
+.sb-main { display: flex; align-items: center; gap: var(--s-3); }
+.sb-ring { width: 56px; height: 56px; flex: none; position: relative; display: grid; place-items: center; }
+.sb-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.sb-ring .track { fill: none; stroke: color-mix(in srgb, var(--accent-text) 22%, transparent); stroke-width: 4; }
+.sb-ring .prog { fill: none; stroke: var(--accent-text); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.sb-ring .bell { width: 22px; height: 22px; z-index: 1; display: grid; place-items: center; }
+.sb-ring .bell svg { position: static; inset: auto; width: 22px; height: 22px; transform: none; }
+.sb-ring .bell .ic { stroke: var(--accent-text); }
+.sb-count { flex: 1; }
+.sb-count .big { font-family: var(--font-display); font-weight: 700; font-size: var(--t-2xl); line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.sb-count .sub { font-size: var(--t-xs); opacity: .8; margin-top: 4px; font-weight: 500; }
+.sb-stop {
+  width: 50px; height: 50px; border-radius: var(--r-pill); flex: none;
+  background: color-mix(in srgb, var(--accent-text) 16%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--accent-text) 35%, transparent);
+  display: grid; place-items: center;
+  transition: transform var(--dur-1);
+}
+.sb-stop:active { transform: scale(.9); }
+.sb-stop svg { width: 20px; height: 20px; }
+.sb-stop .ic { stroke: var(--accent-text); stroke-width: 2.4; }
+
+.live-card {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: var(--surface); border-radius: var(--r-5) var(--r-5) 0 0;
+  box-shadow: var(--e-sheet); border-top: 1px solid var(--line);
+  padding: var(--s-3) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom));
+  z-index: 20;
+}
+.live-dest { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-3); }
+.live-dest .glyph { width: 36px; height: 36px; flex: none; border-radius: var(--r-2); background: var(--accent); display: grid; place-items: center; }
+.live-dest .glyph svg { width: 20px; height: 20px; }
+.live-dest .glyph .ic { stroke: var(--accent-text); }
+.live-dest .v { font-weight: 600; }
+.live-dest .s { font-size: var(--t-xs); color: var(--text-2); }
+.live-stats { display: flex; gap: var(--s-2); margin-bottom: var(--s-3); }
+.live-stat { flex: 1; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-2); padding: var(--s-3); text-align: center; }
+.live-stat .n { font-family: var(--font-display); font-weight: 700; font-size: var(--t-lg); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.live-stat .l { font-size: 10px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-top: 2px; }
+.track-bar { height: 6px; border-radius: 99px; background: var(--surface-sunk); overflow: hidden; margin-bottom: var(--s-2); border: 1px solid var(--line); }
+.track-bar .fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 1s linear; }
+
+/* ---------------------------------------------------------------------
+   Onboarding
+   --------------------------------------------------------------------- */
+#onboarding { background: var(--bg); }
+.ob-wrap { flex: 1; display: flex; flex-direction: column; padding: max(var(--s-7), env(safe-area-inset-top)) var(--s-6) var(--s-6); }
+.ob-slides { flex: 1; position: relative; }
+.ob-slide {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  opacity: 0; transform: translateX(24px); pointer-events: none;
+  transition: opacity var(--dur-3) var(--ease), transform var(--dur-3) var(--ease);
+}
+.ob-slide.active { opacity: 1; transform: none; pointer-events: auto; }
+.ob-art {
+  flex: 1; display: grid; place-items: center; margin-bottom: var(--s-6);
+  min-height: 0;
+}
+.ob-art svg { width: min(72%, 280px); height: auto; }
+.ob-kicker { font-size: var(--t-xs); font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--text-3); margin-bottom: var(--s-3); }
+.ob-title { font-family: var(--font-display); font-weight: 700; font-size: var(--t-2xl); line-height: 1.05; letter-spacing: -.03em; margin-bottom: var(--s-3); }
+.ob-body { color: var(--text-2); font-size: var(--t-md); line-height: 1.5; max-width: 34ch; }
+.ob-dots { display: flex; gap: 7px; justify-content: center; margin: var(--s-6) 0; }
+.ob-dots i { width: 7px; height: 7px; border-radius: 99px; background: var(--line-strong); transition: all var(--dur-2) var(--ease); }
+.ob-dots i.on { width: 22px; background: var(--text); }
+.ob-actions { display: flex; flex-direction: column; gap: var(--s-2); }
+.ob-skip { position: absolute; top: max(var(--s-5), env(safe-area-inset-top)); right: var(--s-6); font-size: var(--t-sm); font-weight: 600; color: var(--text-2); z-index: 2; }
+
+/* ---------------------------------------------------------------------
+   Settings & generic interior screens
+   --------------------------------------------------------------------- */
+.settings-group { padding: var(--s-2) var(--s-4) 0; }
+.settings-group .gh { font-size: var(--t-xs); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); padding: var(--s-4) var(--s-1) var(--s-2); }
+.s-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); overflow: hidden; }
+.s-row { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--line); transition: background var(--dur-1); }
+.s-row:last-child { border-bottom: none; }
+.s-row:active { background: var(--surface-2); }
+.s-row .s-ic { width: 34px; height: 34px; flex: none; border-radius: var(--r-2); background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
+.s-row .s-ic svg { width: 18px; height: 18px; }
+.s-row .s-body { flex: 1; min-width: 0; }
+.s-row .s-body .t { font-weight: 600; font-size: var(--t-base); }
+.s-row .s-body .d { font-size: var(--t-xs); color: var(--text-2); }
+.s-row .chev { width: 18px; height: 18px; flex: none; }
+.s-row .val { font-size: var(--t-sm); color: var(--text-2); font-weight: 500; }
+
+/* Toggle (monochrome) */
+.toggle { width: 46px; height: 28px; border-radius: 99px; background: var(--line-strong); position: relative; transition: background var(--dur-2) var(--ease); flex: none; border: 1px solid transparent; }
+.toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 99px; background: var(--paper); box-shadow: var(--e-1); transition: transform var(--dur-2) var(--ease-spring); }
+.toggle.on { background: var(--accent); }
+.toggle.on::after { transform: translateX(18px); background: var(--accent-text); }
+[data-theme="dark"] .toggle::after { background: #e8e8e8; }
+
+/* Segmented control */
+.segment { display: flex; background: var(--surface-sunk); border: 1px solid var(--line); border-radius: var(--r-2); padding: 3px; gap: 3px; }
+.segment button { flex: 1; padding: 8px; border-radius: calc(var(--r-2) - 4px); font-weight: 600; font-size: var(--t-sm); color: var(--text-2); transition: all var(--dur-1); }
+.segment button.active { background: var(--surface); color: var(--text); box-shadow: var(--e-1); }
+
+/* Profile header */
+.profile-head { display: flex; flex-direction: column; align-items: center; gap: var(--s-3); padding: var(--s-6) var(--s-4); }
+.profile-head .pa { width: 84px; height: 84px; border-radius: 99px; background: var(--ink-800); color: #fff; display: grid; place-items: center; font-family: var(--font-display); font-weight: 600; font-size: var(--t-xl); box-shadow: var(--e-2); }
+[data-theme="dark"] .profile-head .pa { background: var(--ink-200); color: #000; }
+.profile-head .pn { font-family: var(--font-display); font-weight: 600; font-size: var(--t-lg); }
+.profile-head .pe { font-size: var(--t-sm); color: var(--text-2); }
+.stat-cards { display: flex; gap: var(--s-2); padding: 0 var(--s-4) var(--s-4); }
+.stat-cards .sc { flex: 1; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-2); padding: var(--s-3); text-align: center; }
+.stat-cards .sc .n { font-family: var(--font-display); font-weight: 700; font-size: var(--t-lg); }
+.stat-cards .sc .l { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; margin-top: 2px; }
+
+/* Review screen stars */
+.stars { display: flex; gap: var(--s-2); justify-content: center; padding: var(--s-5) 0; }
+.star { width: 42px; height: 42px; }
+.star svg { width: 100%; height: 100%; }
+.star .ic { stroke: var(--line-strong); }
+.star.on .ic { fill: var(--text); stroke: var(--text); }
+.field { width: 100%; min-height: 120px; resize: none; padding: var(--s-4); border: 1px solid var(--line); border-radius: var(--r-3); background: var(--surface); color: var(--text); font-size: var(--t-base); outline: none; transition: border-color var(--dur-1); }
+.field:focus { border-color: var(--text); }
+
+/* Empty state */
+.empty { text-align: center; padding: var(--s-9) var(--s-6); color: var(--text-2); }
+.empty svg { width: 56px; height: 56px; margin: 0 auto var(--s-4); display: block; }
+.empty h3 { font-family: var(--font-display); font-weight: 600; color: var(--text); margin-bottom: var(--s-2); }
+.empty p { font-size: var(--t-sm); }
+
+/* Alarm ring overlay */
+#alarmRing {
+  position: absolute; inset: 0; z-index: 90; display: none;
+  background: var(--accent); color: var(--accent-text);
+  flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: var(--s-6);
+  animation: viewIn var(--dur-2) var(--ease);
+}
+#alarmRing.show { display: flex; }
+#alarmRing .ring-ic { width: 96px; height: 96px; margin-bottom: var(--s-6); animation: bellShake 1s var(--ease) infinite; }
+#alarmRing .ring-ic .ic { stroke: var(--accent-text); stroke-width: 1.6; }
+@keyframes bellShake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(12deg)} 40%{transform:rotate(-10deg)} 60%{transform:rotate(7deg)} 80%{transform:rotate(-4deg)} }
+#alarmRing h1 { font-family: var(--font-display); font-size: var(--t-2xl); font-weight: 700; letter-spacing: -.03em; margin-bottom: var(--s-2); }
+#alarmRing p { opacity: .85; margin-bottom: var(--s-8); max-width: 28ch; }
+#alarmRing .ring-btn { width: 100%; max-width: 300px; height: 56px; border-radius: var(--r-3); background: var(--accent-text); color: var(--accent); font-family: var(--font-display); font-weight: 600; font-size: var(--t-md); }
+
+/* Toast */
+#toast {
+  position: absolute; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom));
+  transform: transl(-50%, 20px); translate: -50% 20px;
+  background: var(--accent); color: var(--accent-text);
+  padding: var(--s-3) var(--s-5); border-radius: var(--r-pill);
+  font-size: var(--t-sm); font-weight: 600; box-shadow: var(--e-3);
+  z-index: 80; opacity: 0; pointer-events: none;
+  transition: opacity var(--dur-2), translate var(--dur-2) var(--ease-spring);
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; translate: -50% 0; }
+
+.tone-pill {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  border: 1px solid var(--line); border-radius: var(--r-pill);
+  padding: 6px 12px 6px 8px; font-size: var(--t-sm); font-weight: 600;
+  background: var(--surface);
+}
+.tone-pill .sp-ic { width: 26px; height: 26px; border-radius: 99px; background: var(--accent); display: grid; place-items: center; flex: none; }
+.tone-pill .sp-ic svg { width: 15px; height: 15px; }
+.tone-pill .sp-ic .ic { stroke: var(--accent-text); }
+.live-gps {
+  font-size: var(--t-xs); color: var(--text-3); font-weight: 600;
+  display: flex; align-items: center; gap: 6px; margin-bottom: var(--s-3);
+}
+.live-gps::before { content: ""; width: 7px; height: 7px; border-radius: 99px; background: var(--text); animation: gpsPulse 1.8s var(--ease) infinite; }
+@keyframes gpsPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="app" id="app">
+
+  <!-- ============================= SVG ICON DEFS ============================= -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path class="ic" d="M4 7h16M4 12h16M4 17h16"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle class="ic" cx="11" cy="11" r="7"/><path class="ic" d="M20 20l-3.5-3.5"/></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path class="ic" d="M15 5l-7 7 7 7"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path class="ic" d="M6 6l12 12M18 6L6 18"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path class="ic" d="M9 5l7 7-7 7"/></symbol>
+      <symbol id="i-go" viewBox="0 0 24 24"><path class="ic" d="M5 12h14M13 6l6 6-6 6"/></symbol>
+      <symbol id="i-map" viewBox="0 0 24 24"><path class="ic" d="M9 5L3 7v12l6-2 6 2 6-2V5l-6 2-6-2z"/><path class="ic" d="M9 5v12M15 7v12"/></symbol>
+      <symbol id="i-alarm" viewBox="0 0 24 24"><circle class="ic" cx="12" cy="13" r="8"/><path class="ic" d="M12 9v4l3 2M5 3L2 6M19 3l3 3"/></symbol>
+      <symbol id="i-nav" viewBox="0 0 24 24"><path class="ic" d="M3 11l18-8-8 18-2-8-8-2z"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle class="ic" cx="12" cy="8" r="4"/><path class="ic" d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24"><path class="ic" d="M12 21s7-6.3 7-12a7 7 0 10-14 0c0 5.7 7 12 7 12z"/><circle class="ic" cx="12" cy="9" r="2.5"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path class="ic" d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path class="ic" d="M13.7 21a2 2 0 01-3.4 0"/></symbol>
+      <symbol id="i-route" viewBox="0 0 24 24"><circle class="ic" cx="6" cy="19" r="2.5"/><circle class="ic" cx="18" cy="5" r="2.5"/><path class="ic" d="M8.5 19H15a3 3 0 000-6H9a3 3 0 010-6h6.5"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path class="ic" d="M12 3l2.6 5.6L20.5 9l-4.5 4 1.3 6L12 16l-5.3 3 1.3-6-4.5-4 5.9-.4z"/></symbol>
+      <symbol id="i-bookmark" viewBox="0 0 24 24"><path class="ic" d="M6 4h12v17l-6-4-6 4z"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><circle class="ic" cx="12" cy="12" r="3"/><path class="ic" d="M12 2v3M12 19v3M5 5l2 2M17 17l2 2M2 12h3M19 12h3M5 19l2-2M17 7l2-2"/></symbol>
+      <symbol id="i-home" viewBox="0 0 24 24"><path class="ic" d="M4 11l8-7 8 7M6 9.5V20h12V9.5"/></symbol>
+      <symbol id="i-work" viewBox="0 0 24 24"><rect class="ic" x="3" y="8" width="18" height="12" rx="2"/><path class="ic" d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2"/></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24"><circle class="ic" cx="5" cy="12" r="1.6"/><circle class="ic" cx="12" cy="12" r="1.6"/><circle class="ic" cx="19" cy="12" r="1.6"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle class="ic" cx="12" cy="12" r="9"/><path class="ic" d="M12 7v5l3.5 2"/></symbol>
+      <symbol id="i-swap" viewBox="0 0 24 24"><path class="ic" d="M7 4v16M7 20l-3-3M7 4l3 3M17 20V4M17 4l3 3M17 20l-3-3"/></symbol>
+      <symbol id="i-car" viewBox="0 0 24 24"><path class="ic" d="M5 11l1.6-4.2A2 2 0 018.5 5.5h7a2 2 0 011.9 1.3L19 11M4 11h16v6H4z"/><circle class="ic-fill" cx="7.5" cy="17.5" r="1.4"/><circle class="ic-fill" cx="16.5" cy="17.5" r="1.4"/></symbol>
+      <symbol id="i-bus" viewBox="0 0 24 24"><rect class="ic" x="4" y="4" width="16" height="13" rx="2"/><path class="ic" d="M4 11h16M8 4v7M16 4v7"/><circle class="ic-fill" cx="8" cy="20" r="1.3"/><circle class="ic-fill" cx="16" cy="20" r="1.3"/></symbol>
+      <symbol id="i-metro" viewBox="0 0 24 24"><rect class="ic" x="5" y="3" width="14" height="14" rx="3"/><path class="ic" d="M5 11h14M9 21l-1.5 1.5M15 21l1.5 1.5"/><circle class="ic-fill" cx="8.5" cy="14" r="1.2"/><circle class="ic-fill" cx="15.5" cy="14" r="1.2"/></symbol>
+      <symbol id="i-train" viewBox="0 0 24 24"><path class="ic" d="M7 3h10a3 3 0 013 3v9a3 3 0 01-3 3H7a3 3 0 01-3-3V6a3 3 0 013-3z"/><path class="ic" d="M4 10h16M12 3v7M7 21l-2 2M17 21l2 2"/><circle class="ic-fill" cx="8" cy="14.5" r="1.1"/><circle class="ic-fill" cx="16" cy="14.5" r="1.1"/></symbol>
+      <symbol id="i-music" viewBox="0 0 24 24"><path class="ic" d="M9 18V6l11-2v12"/><circle class="ic" cx="6" cy="18" r="3"/><circle class="ic" cx="17" cy="16" r="3"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path class="ic" d="M20 14a8 8 0 11-9-10 7 7 0 009 10z"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path class="ic" d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path class="ic" d="M9 12l2 2 4-4"/></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24"><circle class="ic" cx="12" cy="12" r="9"/><path class="ic" d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></symbol>
+      <symbol id="i-help" viewBox="0 0 24 24"><circle class="ic" cx="12" cy="12" r="9"/><path class="ic" d="M9.5 9.5a2.5 2.5 0 014.5 1.5c0 1.5-2 2-2 3.5M12 17.5h.01"/></symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24"><path class="ic" d="M13 3L4 14h7l-1 7 9-11h-7z"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path class="ic" d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13h10l1-13"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path class="ic" d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path class="ic" d="M4 20h4l10-10-4-4L4 16v4z"/><path class="ic" d="M13.5 6.5l4 4"/></symbol>
+      <symbol id="i-locate" viewBox="0 0 24 24"><circle class="ic" cx="12" cy="12" r="6"/><path class="ic" d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle class="ic-fill" cx="12" cy="12" r="2.2"/></symbol>
+      <symbol id="i-vibrate" viewBox="0 0 24 24"><rect class="ic" x="8" y="4" width="8" height="16" rx="2"/><path class="ic" d="M3 9v6M21 9v6"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- ============================= LOGIN ============================= -->
+  <section class="view full" id="login">
+    <div class="login-wrap">
+      <svg class="login-mark mark" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      <h1 class="login-title">ArriveO'Clock</h1>
+      <p class="login-sub">Sign in to sync your saved places, recent trips and alarm across devices.</p>
+      <div class="login-actions">
+        <button class="btn-primary" onclick="signIn()">
+          <span class="gbtn-ic"><svg viewBox="0 0 24 24"><path class="ic" d="M21 12.2c0-.6-.1-1.2-.2-1.7H12v3.3h5.1a4.4 4.4 0 0 1-1.9 2.9v2.4h3.1c1.8-1.7 2.7-4.1 2.7-6.9z"/><path class="ic" d="M12 21c2.4 0 4.5-.8 6-2.2l-3.1-2.4c-.8.6-1.9.9-2.9.9-2.3 0-4.2-1.5-4.9-3.6H3.9v2.5A9 9 0 0 0 12 21z"/></svg></span>
+          Continue with Google
+        </button>
+        <p class="login-fine">By continuing you agree to be woken up before your stop. We only use your location to compute live ETA.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= ONBOARDING ============================= -->
+  <section class="view full active" id="onboarding">
+    <button class="ob-skip" onclick="finishOnboarding()">Skip</button>
+    <div class="ob-wrap">
+      <div class="ob-slides" id="obSlides">
+
+        <div class="ob-slide active" data-slide="0">
+          <div class="ob-art">
+            <svg viewBox="0 0 200 200" fill="none" aria-hidden="true">
+              <rect x="20" y="20" width="160" height="160" rx="24" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/>
+              <path d="M40 60h120M40 100h70M40 140h120" stroke="var(--line)" stroke-width="3" stroke-linecap="round"/>
+              <path d="M55 30 Q100 70 100 110 Q100 150 130 165" stroke="var(--text)" stroke-width="3" stroke-dasharray="2 8" stroke-linecap="round"/>
+              <path d="M122 100s22-19.8 22-37.7A22 22 0 1 0 100 62.3C100 80.2 122 100 122 100z" fill="var(--text)"/>
+              <circle cx="122" cy="61" r="14" fill="var(--surface)"/>
+              <path d="M122 54v7l5 3" stroke="var(--text)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              <circle cx="130" cy="165" r="9" fill="var(--text)"/><circle cx="130" cy="165" r="3.5" fill="var(--surface)"/>
+            </svg>
+          </div>
+          <div class="ob-kicker">Welcome to</div>
+          <h1 class="ob-title">Never miss<br>your stop again.</h1>
+          <p class="ob-body">ArriveO'Clock watches your journey and wakes you up right on time — no fixed timers, no guesswork.</p>
+        </div>
+
+        <div class="ob-slide" data-slide="1">
+          <div class="ob-art">
+            <svg viewBox="0 0 200 200" fill="none" aria-hidden="true">
+              <circle cx="100" cy="100" r="74" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/>
+              <circle cx="100" cy="100" r="74" fill="none" stroke="var(--text)" stroke-width="6" stroke-linecap="round" stroke-dasharray="350 465" transform="rotate(-90 100 100)"/>
+              <path d="M100 56v44l30 18" stroke="var(--text)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="100" cy="100" r="6" fill="var(--text)"/>
+            </svg>
+          </div>
+          <div class="ob-kicker">Dynamic alarm</div>
+          <h1 class="ob-title">Timed off live ETA, not a countdown.</h1>
+          <p class="ob-body">Traffic slows you down? The alarm shifts with you. It rings a few minutes before you actually arrive.</p>
+        </div>
+
+        <div class="ob-slide" data-slide="2">
+          <div class="ob-art">
+            <svg viewBox="0 0 200 200" fill="none" aria-hidden="true">
+              <rect x="42" y="34" width="116" height="132" rx="22" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/>
+              <path d="M70 80h60M70 100h40" stroke="var(--line)" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="100" cy="128" r="20" fill="none" stroke="var(--text)" stroke-width="4"/>
+              <path d="M86 110 l28 28M114 110 l-28 28" stroke="var(--text)" stroke-width="4" stroke-linecap="round"/>
+              <path d="M100 34v-8M88 26h24" stroke="var(--text)" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="ob-kicker">Works anywhere, free</div>
+          <h1 class="ob-title">Any city. Any ride. No sign-up.</h1>
+          <p class="ob-body">Bus, metro, train or car — the alarm tracks your real movement, so it works worldwide and even offline. Pick from built-in tones.</p>
+        </div>
+
+      </div>
+      <div class="ob-dots" id="obDots"><i class="on"></i><i></i><i></i></div>
+      <div class="ob-actions">
+        <button class="btn-primary" id="obNext" onclick="obNext()">Continue</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= HOME ============================= -->
+  <section class="view" id="home" data-tab="map">
+    <div class="map" id="homeMap"></div>
+    <div class="map-fade"></div>
+
+    <div class="topbar floating">
+      <button class="icon-btn" aria-label="Menu" onclick="go('settings')"><svg><use href="#i-menu"/></svg></button>
+      <span class="brand"><svg class="mark" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span class="brand-name">Arrive<b>O'Clock</b></span></span>
+      <button class="avatar" data-avatar onclick="go('profile')">A</button>
+    </div>
+
+    <div style="position:absolute;top:62px;left:var(--s-4);right:var(--s-4);z-index:25;padding-top:env(safe-area-inset-top)">
+      <button class="searchbar" style="width:100%" onclick="openSearch()">
+        <svg><use href="#i-search"/></svg>
+        <input placeholder="Where are you headed?" readonly tabindex="-1" style="pointer-events:none">
+      </button>
+    </div>
+
+    <button class="locate-fab" onclick="locateMe()" aria-label="Show my location"><svg><use href="#i-locate"/></svg></button>
+
+    <div class="sheet" id="homeSheet">
+      <div class="grip"></div>
+      <div class="sheet-title"><h2>Quick start</h2><span>Pune</span></div>
+      <div class="tile-grid">
+        <button class="tile feature" onclick="openSearch()">
+          <div class="tile-ic"><svg><use href="#i-alarm"/></svg></div>
+          <div>
+            <h3>Arrival Alarm</h3>
+            <p>Set a stop and we'll wake you</p>
+          </div>
+          <span class="go"><svg><use href="#i-go"/></svg></span>
+        </button>
+
+        <button class="tile" onclick="resumeJourney()">
+          <div class="tile-ic"><svg><use href="#i-route"/></svg></div>
+          <div><h3>Ongoing</h3><p>Resume journey</p></div>
+          <span class="badge" id="ongoingBadge" style="display:none">Live</span>
+        </button>
+
+        <button class="tile" onclick="go('saved')">
+          <div class="tile-ic"><svg><use href="#i-bookmark"/></svg></div>
+          <div><h3>Saved Places</h3><p>Home, Work +2</p></div>
+        </button>
+
+        <button class="tile" onclick="go('review')">
+          <div class="tile-ic"><svg><use href="#i-star"/></svg></div>
+          <div><h3>Rate the app</h3><p>Reviews &amp; ideas</p></div>
+        </button>
+
+        <button class="tile" onclick="go('settings')">
+          <div class="tile-ic"><svg><use href="#i-settings"/></svg></div>
+          <div><h3>Settings</h3><p>Alarm, theme, account</p></div>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= SEARCH ============================= -->
+  <section class="view" id="search">
+    <div class="page-head">
+      <button class="icon-btn back-btn" onclick="searchBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <h1 id="searchTitle">Set destination</h1>
+    </div>
+    <div style="padding:0 var(--s-4) var(--s-3)">
+      <div class="searchbar">
+        <svg><use href="#i-search"/></svg>
+        <input id="searchInput" placeholder="Search a place or address" autocomplete="off">
+      </div>
+    </div>
+    <div id="searchResults"></div>
+    <div class="quick-row">
+      <button class="chip" onclick="pickSaved('home')"><span class="c-ic"><svg><use href="#i-home"/></svg></span><span>Home</span></button>
+      <button class="chip" onclick="pickSaved('work')"><span class="c-ic"><svg><use href="#i-work"/></svg></span><span>Work</span></button>
+      <button class="chip" onclick="go('saved')"><span class="c-ic"><svg><use href="#i-more"/></svg></span><span>More</span></button>
+    </div>
+    <div class="view-scroll">
+      <div class="list-label"><span class="lbl">Recent</span><button style="width:30px;height:30px" class="icon-btn" onclick="clearRecents()" aria-label="Clear"><svg style="width:16px;height:16px"><use href="#i-trash"/></svg></button></div>
+      <div id="recentList"></div>
+      <button class="text-link" onclick="toast('Showing full history')">More from recent history</button>
+    </div>
+  </section>
+
+  <!-- ============================= ROUTE CONFIRM ============================= -->
+  <section class="view" id="route">
+    <div class="map route-live" id="routeMap"></div>
+    <div class="map-fade top"></div>
+    <div class="topbar floating">
+      <button class="icon-btn" onclick="go('search')" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+    </div>
+
+    <div class="route-card">
+      <div class="grip"></div>
+      <div class="route-rows">
+        <div class="r-node" onclick="openPicker('origin')">
+          <div class="glyph"><div class="o"></div></div>
+          <div class="label"><div class="k">From</div><div class="v" id="routeOrigin">Your location</div></div>
+          <svg class="chev node-chev"><use href="#i-edit"/></svg>
+          <button class="icon-btn swap-btn" onclick="event.stopPropagation();swapRoute()" aria-label="Swap origin and destination"><svg><use href="#i-swap"/></svg></button>
+        </div>
+        <div class="r-node" onclick="openPicker('dest')">
+          <div class="glyph"><svg><use href="#i-pin"/></svg></div>
+          <div class="label"><div class="k">To</div><div class="v" id="routeDest">Aditya Birla Memorial Hospital</div></div>
+          <svg class="chev node-chev"><use href="#i-edit"/></svg>
+        </div>
+      </div>
+
+      <div class="mode-row" id="modeRow">
+        <button class="mode active" data-mode="car" data-min="28" data-km="21" onclick="setMode(this)"><svg><use href="#i-car"/></svg><span class="m-eta">28m</span></button>
+        <button class="mode" data-mode="bus" data-min="46" data-km="23" onclick="setMode(this)"><svg><use href="#i-bus"/></svg><span class="m-eta">46m</span></button>
+        <button class="mode" data-mode="metro" data-min="34" data-km="19" onclick="setMode(this)"><svg><use href="#i-metro"/></svg><span class="m-eta">34m</span></button>
+        <button class="mode" data-mode="train" data-min="52" data-km="26" onclick="setMode(this)"><svg><use href="#i-train"/></svg><span class="m-eta">52m</span></button>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><div class="num" id="statTime">28<span style="font-size:.5em;font-weight:600"> min</span></div><div class="lab">Duration</div></div>
+        <div class="stat-sep"></div>
+        <div class="stat"><div class="num" id="statKm">21<span style="font-size:.5em;font-weight:600"> km</span></div><div class="lab">Distance</div></div>
+        <div class="stat-sep"></div>
+        <div class="stat"><div class="num" id="statEta">02:10</div><div class="lab">Arrival</div></div>
+      </div>
+
+      <button class="btn-primary" onclick="startJourney()"><svg><use href="#i-nav"/></svg> Start Journey</button>
+      <button class="btn-secondary" onclick="go('sound')"><svg><use href="#i-music"/></svg> Change alarm sound</button>
+      <p class="hint">Alarm rings <b>5 min</b> before you arrive · adjusts with live ETA</p>
+    </div>
+  </section>
+
+  <!-- ============================= ACTIVE JOURNEY ============================= -->
+  <section class="view" id="active" data-tab="nav">
+    <div class="map route-live" id="activeMap"></div>
+    <div class="map-fade"></div>
+
+    <div class="status-banner">
+      <div class="sb-top"><svg><use href="#i-bell"/></svg> Alarm set · rings 5 min before arrival</div>
+      <div class="sb-main">
+        <div class="sb-ring">
+          <svg viewBox="0 0 56 56"><circle class="track" cx="28" cy="28" r="24"/><circle class="prog" id="ringProg" cx="28" cy="28" r="24" stroke-dasharray="150.8" stroke-dashoffset="0"/></svg>
+          <span class="bell"><svg><use href="#i-bell"/></svg></span>
+        </div>
+        <div class="sb-count">
+          <div class="big"><span id="countMin">23</span> min</div>
+          <div class="sub">until alarm · arriving <span id="liveEta">02:10</span></div>
+        </div>
+        <button class="sb-stop" onclick="stopJourney()" aria-label="Stop alarm"><svg><use href="#i-close"/></svg></button>
+      </div>
+    </div>
+
+    <div class="live-card">
+      <div class="grip"></div>
+      <div class="live-dest">
+        <div class="glyph"><svg><use href="#i-pin"/></svg></div>
+        <div style="flex:1;min-width:0">
+          <div class="v" id="liveDest">Aditya Birla Memorial Hospital</div>
+          <div class="s" id="liveVia">On your way</div>
+        </div>
+        <span class="tone-pill" onclick="go('sound')"><span class="sp-ic"><svg><use href="#i-bell"/></svg></span> <span id="liveTone">Lo-fi</span></span>
+      </div>
+      <div class="live-gps" id="liveGps">Live GPS · battery-saver</div>
+      <div class="live-stats">
+        <div class="live-stat"><div class="n" id="liveMin">28</div><div class="l">min left</div></div>
+        <div class="live-stat"><div class="n" id="liveKm">21</div><div class="l">km left</div></div>
+        <div class="live-stat"><div class="n" id="liveSpeed">44</div><div class="l">km/h</div></div>
+      </div>
+      <div class="track-bar"><div class="fill" id="trackFill" style="width:6%"></div></div>
+      <button class="btn-secondary" onclick="stopJourney()"><svg><use href="#i-close"/></svg> End journey &amp; cancel alarm</button>
+    </div>
+  </section>
+
+  <!-- ============================= SOUND ============================= -->
+  <section class="view full" id="sound">
+    <div class="page-head">
+      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <h1>Alarm sound</h1>
+    </div>
+    <div class="view-scroll">
+      <div class="settings-group">
+        <div class="gh">Tones — tap to preview</div>
+        <div class="s-card" id="toneList"></div>
+      </div>
+      <div class="settings-group">
+        <div class="gh">Behaviour</div>
+        <div class="s-card">
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-vibrate"/></svg></div><div class="s-body"><div class="t">Vibrate</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-bolt"/></svg></div><div class="s-body"><div class="t">Gradually increase volume</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+        </div>
+      </div>
+      <div style="padding:var(--s-4)"><button class="btn-primary" onclick="goBack();toast('Sound saved')">Save</button></div>
+    </div>
+  </section>
+
+  <!-- ============================= SAVED PLACES ============================= -->
+  <section class="view full" id="saved">
+    <div class="page-head">
+      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <h1>Saved places</h1>
+    </div>
+    <div class="view-scroll">
+      <div class="settings-group">
+        <div class="s-card" id="savedList"></div>
+      </div>
+      <div style="padding:var(--s-4)"><button class="btn-secondary" onclick="openEditPlace(null)"><svg><use href="#i-plus"/></svg> Add a place</button></div>
+    </div>
+  </section>
+
+  <!-- ============================= EDIT / ADD SAVED PLACE ============================= -->
+  <section class="view full" id="editPlace">
+    <div class="page-head">
+      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <h1 id="editTitle">Edit place</h1>
+    </div>
+    <div class="view-scroll">
+      <div class="settings-group">
+        <div class="gh">Label</div>
+        <div class="s-card" style="padding:2px var(--s-4)">
+          <input id="editLabel" class="edit-input" placeholder="e.g. Home, Work, Gym" autocomplete="off">
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="gh">Location</div>
+        <div class="s-card">
+          <div class="s-row" onclick="openPicker('editLocation')">
+            <div class="s-ic"><svg><use href="#i-pin"/></svg></div>
+            <div class="s-body"><div class="t" id="editLocName">Tap to set location</div><div class="d" id="editLocAddr"></div></div>
+            <svg class="chev"><use href="#i-chevron"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="gh">Icon</div>
+        <div class="s-card" style="padding:var(--s-3) var(--s-4)"><div class="icon-row" id="editIconRow"></div></div>
+      </div>
+      <div style="padding:var(--s-4)">
+        <button class="btn-primary" onclick="saveEditPlace()">Save place</button>
+        <button class="btn-secondary" id="editDeleteBtn" onclick="deleteEditPlace()" style="margin-top:var(--s-3)"><svg><use href="#i-trash"/></svg> Delete place</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= REVIEW ============================= -->
+  <section class="view full" id="review">
+    <div class="page-head">
+      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <h1>Review &amp; suggestions</h1>
+    </div>
+    <div class="view-scroll" style="padding:0 var(--s-4)">
+      <p style="text-align:center;color:var(--text-2);margin-top:var(--s-5)">How was your experience?</p>
+      <div class="stars" id="stars">
+        <button class="star" data-v="1"><svg><use href="#i-star"/></svg></button>
+        <button class="star" data-v="2"><svg><use href="#i-star"/></svg></button>
+        <button class="star" data-v="3"><svg><use href="#i-star"/></svg></button>
+        <button class="star" data-v="4"><svg><use href="#i-star"/></svg></button>
+        <button class="star" data-v="5"><svg><use href="#i-star"/></svg></button>
+      </div>
+      <textarea class="field" id="reviewText" placeholder="Tell us what worked, or suggest a feature…"></textarea>
+      <div style="margin-top:var(--s-4)"><button class="btn-primary" onclick="submitReview()">Send feedback</button></div>
+    </div>
+  </section>
+
+  <!-- ============================= PROFILE ============================= -->
+  <section class="view full" id="profile">
+    <div class="page-head">
+      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <h1>Profile</h1>
+    </div>
+    <div class="view-scroll">
+      <div class="profile-head">
+        <div class="pa" data-avatar>A</div>
+        <div style="text-align:center"><div class="pn" id="profileName">You</div><div class="pe" id="profileEmail"></div></div>
+      </div>
+      <div class="stat-cards">
+        <div class="sc"><div class="n" id="statTrips">0</div><div class="l">Trips</div></div>
+        <div class="sc"><div class="n" id="statMissed">0</div><div class="l">Missed</div></div>
+        <div class="sc"><div class="n" id="statHours">0h</div><div class="l">Hours</div></div>
+      </div>
+      <div class="settings-group">
+        <div class="s-card">
+          <div class="s-row" onclick="go('saved')"><div class="s-ic"><svg><use href="#i-bookmark"/></svg></div><div class="s-body"><div class="t">Saved places</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" onclick="go('settings')"><div class="s-ic"><svg><use href="#i-settings"/></svg></div><div class="s-body"><div class="t">Settings</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" onclick="go('review')"><div class="s-ic"><svg><use href="#i-star"/></svg></div><div class="s-body"><div class="t">Rate ArriveO'Clock</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= SETTINGS ============================= -->
+  <section class="view full" id="settings">
+    <div class="page-head">
+      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <h1>Settings</h1>
+    </div>
+    <div class="view-scroll">
+      <div class="settings-group">
+        <div class="gh">Appearance</div>
+        <div class="s-card">
+          <div class="s-row">
+            <div class="s-ic"><svg><use href="#i-moon"/></svg></div>
+            <div class="s-body"><div class="t">Theme</div><div class="d">Black &amp; white, day or night</div></div>
+            <div class="segment" style="width:160px">
+              <button data-th="light" class="active" onclick="setTheme('light')">Light</button>
+              <button data-th="dark" onclick="setTheme('dark')">Dark</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="gh">Alarm</div>
+        <div class="s-card">
+          <div class="s-row" onclick="go('sound')"><div class="s-ic"><svg><use href="#i-music"/></svg></div><div class="s-body"><div class="t">Alarm sound</div></div><span class="val">Lo-fi</span><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-clock"/></svg></div><div class="s-body"><div class="t">Lead time</div><div class="d">Ring before arrival</div></div><span class="val">5 min</span></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-vibrate"/></svg></div><div class="s-body"><div class="t">Vibration</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="gh">Permissions</div>
+        <div class="s-card">
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-pin"/></svg></div><div class="s-body"><div class="t">Location access</div><div class="d">Always — needed for live ETA</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-bell"/></svg></div><div class="s-body"><div class="t">Notifications</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="gh">General</div>
+        <div class="s-card">
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-globe"/></svg></div><div class="s-body"><div class="t">Units</div></div><span class="val">Kilometres</span></div>
+          <div class="s-row" onclick="go('review')"><div class="s-ic"><svg><use href="#i-help"/></svg></div><div class="s-body"><div class="t">Help &amp; feedback</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" onclick="replayOnboarding()"><div class="s-ic"><svg><use href="#i-bolt"/></svg></div><div class="s-body"><div class="t">Replay intro</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" onclick="signOut()"><div class="s-ic"><svg><use href="#i-shield"/></svg></div><div class="s-body"><div class="t" style="color:var(--text)">Sign out</div></div></div>
+        </div>
+      </div>
+      <p style="text-align:center;color:var(--text-3);font-size:var(--t-xs);padding:var(--s-5)">ArriveO'Clock · v2.0 · Pune</p>
+    </div>
+  </section>
+
+  <!-- ============================= ALARM RING OVERLAY ============================= -->
+  <div id="alarmRing">
+    <div class="ring-ic"><svg viewBox="0 0 24 24"><use href="#i-bell"/></svg></div>
+    <h1>Almost there</h1>
+    <p>You arrive at <b id="alarmDest">your stop</b> in about 5 minutes. Time to get ready.</p>
+    <button class="ring-btn" onclick="dismissAlarm()">Dismiss</button>
+  </div>
+
+  <!-- ============================= TOAST ============================= -->
+  <div id="toast"></div>
+
+  <!-- ============================= TAB BAR ============================= -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab active" data-go="home" onclick="tabGo('home')"><svg><use href="#i-map"/></svg><span>Map</span></button>
+    <button class="tab" data-go="search" onclick="tabGo('search')"><svg><use href="#i-alarm"/></svg><span>Alarm</span></button>
+    <button class="tab" data-go="active" onclick="tabGo('active')"><svg><use href="#i-nav"/></svg><span>Journey</span></button>
+    <button class="tab" data-go="profile" onclick="tabGo('profile')"><svg><use href="#i-user"/></svg><span>Profile</span></button>
+  </nav>
+
+</div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

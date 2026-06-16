@@ -1,0 +1,103 @@
+/* ===========================================================================
+   Supplemental styles for the wired app. The full design system lives inline
+   in index.html; this file adds only what the backend integration introduces:
+   Mapbox markers/controls (forced monochrome), the login screen, and the
+   live search-results list.
+   =========================================================================== */
+
+/* --- MapLibre GL: keep everything strictly grayscale ---------------------- */
+/* MapLibre adds `.maplibregl-map { position: relative }` to our container,
+   which ties `.map`'s specificity and wins on source order — collapsing the
+   container to height:0. This higher-specificity rule keeps it full-bleed. */
+.map.maplibregl-map { position: absolute; top: 0; right: 0; bottom: 0; left: 0; height: auto; }
+.maplibregl-map { font: inherit; }
+.maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--surface) 70%, transparent) !important; }
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-attrib a { color: var(--text-3) !important; font-size: 10px !important; }
+.maplibregl-ctrl-attrib-button { filter: grayscale(1); }
+.maplibregl-ctrl-attrib-button svg { fill: var(--text-3); }
+.maplibregl-canvas { outline: none; }
+
+/* Live "you are here" marker */
+.mb-here { width: 22px; height: 22px; position: relative; }
+.mb-here-dot {
+  position: absolute; inset: 4px; border-radius: 50%;
+  background: var(--route); border: 2px solid var(--route-halo);
+  box-shadow: 0 0 0 1px var(--route);
+}
+.mb-here-pulse {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: var(--route); opacity: .25;
+  animation: mbPulse 2.2s var(--ease) infinite;
+}
+@keyframes mbPulse { 0% { transform: scale(.6); opacity: .35; } 100% { transform: scale(2.2); opacity: 0; } }
+
+/* Destination pin marker */
+.mb-pin { width: 26px; height: 34px; }
+.mb-pin svg { width: 26px; height: 34px; display: block; }
+.mb-pin svg path { fill: var(--route); }
+.mb-pin svg circle { fill: var(--route-halo); }
+
+/* --- Login screen --------------------------------------------------------- */
+#login { background: var(--bg); align-items: center; justify-content: center; }
+.login-wrap {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: max(var(--s-8), env(safe-area-inset-top)) var(--s-7) var(--s-8);
+  text-align: center; width: 100%;
+}
+.login-mark { width: 76px; height: 76px; margin-bottom: var(--s-5); }
+.login-mark .pin { fill: var(--text); }
+.login-title { font-family: var(--font-display); font-weight: 700; font-size: var(--t-2xl); letter-spacing: -.03em; }
+.login-sub { color: var(--text-2); margin: var(--s-3) 0 var(--s-8); max-width: 30ch; line-height: 1.5; }
+.login-actions { width: 100%; max-width: 340px; }
+.login-fine { font-size: var(--t-xs); color: var(--text-3); margin-top: var(--s-4); line-height: 1.5; }
+.gbtn-ic { width: 22px; height: 22px; border-radius: 50%; background: var(--accent-text); display: grid; place-items: center; }
+.gbtn-ic svg { width: 14px; height: 14px; }
+.gbtn-ic .ic { stroke: var(--accent); }
+
+/* --- Live search results -------------------------------------------------- */
+#searchResults { display: none; border-top: 1px solid var(--line); }
+#searchResults .recent-item { cursor: pointer; }
+
+/* --- Locate-me button (home map) ----------------------------------------- */
+.locate-fab {
+  position: absolute; right: var(--s-4); top: calc(128px + env(safe-area-inset-top));
+  width: 46px; height: 46px; border-radius: var(--r-pill);
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--e-2);
+  display: grid; place-items: center; z-index: 24;
+  transition: transform var(--dur-1) var(--ease), background var(--dur-1);
+}
+.locate-fab:active { transform: scale(.92); background: var(--surface-2); }
+.locate-fab svg { width: 22px; height: 22px; }
+
+/* --- Configurable route rows --------------------------------------------- */
+.r-node { cursor: pointer; }
+.node-chev { width: 16px; height: 16px; flex: none; opacity: .45; }
+.node-chev .ic { stroke: var(--text-2); }
+.r-node:active { opacity: .7; }
+
+/* --- Saved-place edit ----------------------------------------------------- */
+.row-edit {
+  width: 38px; height: 38px; flex: none; border-radius: var(--r-2);
+  display: grid; place-items: center; border: 1px solid var(--line); background: var(--surface);
+  transition: transform var(--dur-1), background var(--dur-1);
+}
+.row-edit:active { transform: scale(.9); background: var(--surface-2); }
+.row-edit svg { width: 17px; height: 17px; }
+.s-row .s-ic[data-pick], .s-row .s-body[data-pick] { cursor: pointer; }
+
+.edit-input {
+  width: 100%; border: none; background: none; outline: none; font: inherit;
+  font-size: var(--t-base); font-weight: 600; color: var(--text); padding: var(--s-3) 0;
+}
+.edit-input::placeholder { color: var(--text-3); font-weight: 500; }
+.icon-row { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.icon-opt {
+  width: 46px; height: 46px; border-radius: var(--r-2); border: 1px solid var(--line);
+  background: var(--surface); display: grid; place-items: center;
+  transition: transform var(--dur-1) var(--ease);
+}
+.icon-opt:active { transform: scale(.9); }
+.icon-opt svg { width: 21px; height: 21px; }
+.icon-opt.sel { background: var(--accent); border-color: var(--accent); --text: var(--accent-text); }
+.icon-opt.sel .ic { stroke: var(--accent-text); }
