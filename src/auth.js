@@ -1,6 +1,11 @@
 import { supabase } from './supabaseClient.js';
 import { DEMO } from './config.js';
 import { state } from './state.js';
+import { isNative } from './native.js';
+
+// Deep link the native app handles after Google OAuth (registered as an
+// intent-filter in AndroidManifest + allow-listed in Supabase redirect URLs).
+const NATIVE_REDIRECT = 'com.arriveoclock.app://auth-callback';
 
 // ---------------------------------------------------------------------------
 // Authentication. Google OAuth via Supabase in live mode; a fixed local guest
@@ -62,9 +67,46 @@ export async function signInWithGoogle() {
     state.user = DEMO_USER;
     return;
   }
+  if (isNative) return nativeGoogleSignIn();
   await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin + '/' },
+  });
+}
+
+// Native: Google blocks OAuth inside a WebView, so we open the system browser
+// (Custom Tabs) and return via a deep link.
+async function nativeGoogleSignIn() {
+  const { Browser } = await import('@capacitor/browser');
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: NATIVE_REDIRECT, skipBrowserRedirect: true },
+  });
+  if (error || !data?.url) return;
+  await Browser.open({ url: data.url });
+}
+
+// Register the deep-link handler that completes the session after OAuth.
+// Call once at startup on native.
+export async function initNativeAuth() {
+  if (!isNative) return;
+  const { App } = await import('@capacitor/app');
+  const { Browser } = await import('@capacitor/browser');
+  App.addListener('appUrlOpen', async ({ url }) => {
+    if (!url || !url.startsWith('com.arriveoclock.app://')) return;
+    try {
+      const u = new URL(url);
+      const code = u.searchParams.get('code');
+      if (code) {
+        await supabase.auth.exchangeCodeForSession(code);
+      } else if (u.hash) {
+        const hp = new URLSearchParams(u.hash.replace(/^#/, ''));
+        const at = hp.get('access_token');
+        const rt = hp.get('refresh_token');
+        if (at && rt) await supabase.auth.setSession({ access_token: at, refresh_token: rt });
+      }
+    } catch { /* ignore malformed callback */ }
+    try { await Browser.close(); } catch { /* already closed */ }
   });
 }
 

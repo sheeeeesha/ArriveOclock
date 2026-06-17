@@ -13,6 +13,11 @@ workflows:
     environment:
       node: 20
       java: 17
+      groups:
+        # Create a variable group named "supabase" in Codemagic with:
+        #   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+        # Vite reads VITE_-prefixed env vars at build time.
+        - supabase
     scripts:
       - name: Install dependencies
         script: npm ci

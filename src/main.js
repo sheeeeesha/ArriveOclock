@@ -862,8 +862,11 @@ async function init() {
   wireSearch();
   wireDelegation();
   // On native, background tracking works — the "keep screen open" web caveat
-  // doesn't apply, so drop that note.
-  if (isNative) document.querySelector('.keep-open')?.remove();
+  // doesn't apply, so drop that note. Also register the OAuth deep-link handler.
+  if (isNative) {
+    document.querySelector('.keep-open')?.remove();
+    auth.initNativeAuth();
+  }
   // The map (and its ~800 kB MapLibre chunk) loads lazily when Home is shown —
   // not during onboarding/login.
 
