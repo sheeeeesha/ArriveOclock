@@ -441,6 +441,26 @@ async function deleteEditPlace() {
 // ===========================================================================
 // Journey lifecycle
 // ===========================================================================
+// Screen Wake Lock — keep the screen awake during a journey so the engine
+// keeps running while the app is open (web apps can't run in the background).
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch { wakeLock = null; }
+}
+function releaseWakeLock() {
+  try { wakeLock?.release(); } catch { /* noop */ }
+  wakeLock = null;
+}
+// The lock drops when the tab is hidden; re-acquire on return if still travelling.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.journeyActive && !wakeLock) requestWakeLock();
+});
+
 async function startJourney() {
   const r = state.routes[state.mode];
   state.journeyActive = true;
@@ -462,12 +482,14 @@ async function startJourney() {
     leadMin: state.leadTimeMin,
   });
   go('active');
+  requestWakeLock();
   if (r) mapView.showRoute('activeMap', state.origin, state.dest, r.coordinates, { live: true });
   alarm.begin();
   toast('Journey started · alarm armed');
 }
 function stopJourney(silent) {
   alarm.end();
+  releaseWakeLock();
   state.journeyActive = false;
   state.journeyId = null;
   if (el('ongoingBadge')) el('ongoingBadge').style.display = 'none';
@@ -478,6 +500,7 @@ function stopJourney(silent) {
 function dismissAlarm() {
   el('alarmRing').classList.remove('show');
   alarm.silence();
+  releaseWakeLock();
   state.journeyActive = false;
   state.journeyId = null;
   if (el('ongoingBadge')) el('ongoingBadge').style.display = 'none';
@@ -517,6 +540,7 @@ async function resumeActiveJourney() {
   if (el('liveDest')) el('liveDest').textContent = state.dest.name;
   if (el('liveTone')) el('liveTone').textContent = state.tone;
   go('active', true);
+  requestWakeLock();
   if (r) mapView.showRoute('activeMap', state.origin, state.dest, r.coordinates, { live: true });
   alarm.begin();
   toast('Resumed your journey');

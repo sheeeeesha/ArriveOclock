@@ -81,6 +81,17 @@
 .eta-note .ic-fill { fill: var(--text-3); }
 .eta-note b { color: var(--text); font-weight: 600; }
 
+/* --- "Keep screen open" note (active journey) ----------------------------- */
+.keep-open {
+  display: flex; align-items: flex-start; gap: 7px;
+  font-size: var(--t-xs); color: var(--text-2); line-height: 1.4;
+  border: 1px solid var(--line); border-radius: var(--r-2);
+  padding: 8px 10px; margin-bottom: var(--s-3);
+}
+.keep-open svg { width: 14px; height: 14px; flex: none; margin-top: 1px; }
+.keep-open .ic { stroke: var(--text-3); }
+.keep-open .ic-fill { fill: var(--text-3); }
+
 /* --- Drag-pins hint ------------------------------------------------------- */
 .drag-hint {
   display: flex; align-items: center; gap: 6px;
