@@ -26,7 +26,15 @@ async function ensure() {
     try { await LN.requestPermissions(); } catch { /* ignore */ }
     try {
       if (LN.createChannel) {
-        await LN.createChannel({ id: 'alarm', name: 'Arrival alarm', description: 'Wakes you near your stop', importance: 5, vibration: true });
+        await LN.createChannel({
+          id: 'alarm',
+          name: 'Arrival alarm',
+          description: 'Wakes you near your stop',
+          importance: 5,        // MAX — heads-up + sound even when locked
+          visibility: 1,        // PUBLIC — show full alarm on the lock screen
+          sound: 'alarm.wav',   // loud tone from res/raw, not the default chime
+          vibration: true,
+        });
       }
     } catch { /* ignore */ }
   }
@@ -74,6 +82,7 @@ export async function fireNativeAlarm(title, body) {
         title,
         body,
         channelId: 'alarm',
+        sound: 'alarm.wav',           // pre-Android-O fallback; O+ uses the channel sound
         schedule: { at: new Date(Date.now() + 250) },
       }],
     });
