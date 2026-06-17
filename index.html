@@ -789,11 +789,11 @@ input { font: inherit; }
       <h1 class="login-title">ArriveO'Clock</h1>
       <p class="login-sub">Sign in to sync your saved places, recent trips and alarm across devices — or skip it and use the app right away.</p>
       <div class="login-actions">
-        <button class="btn-primary" onclick="signIn()">
+        <button class="btn-primary" data-act="signIn">
           <span class="gbtn-ic"><svg viewBox="0 0 24 24"><path class="ic" d="M21 12.2c0-.6-.1-1.2-.2-1.7H12v3.3h5.1a4.4 4.4 0 0 1-1.9 2.9v2.4h3.1c1.8-1.7 2.7-4.1 2.7-6.9z"/><path class="ic" d="M12 21c2.4 0 4.5-.8 6-2.2l-3.1-2.4c-.8.6-1.9.9-2.9.9-2.3 0-4.2-1.5-4.9-3.6H3.9v2.5A9 9 0 0 0 12 21z"/></svg></span>
           Continue with Google
         </button>
-        <button class="btn-secondary" onclick="continueAsGuest()" style="margin-top:var(--s-2)">Continue without an account</button>
+        <button class="btn-secondary" data-act="guest" style="margin-top:var(--s-2)">Continue without an account</button>
         <p class="login-fine">No account needed. Without sign-in your data stays on this device only. We use your location solely to compute live ETA.</p>
       </div>
     </div>
@@ -801,7 +801,7 @@ input { font: inherit; }
 
   <!-- ============================= ONBOARDING ============================= -->
   <section class="view full active" id="onboarding">
-    <button class="ob-skip" onclick="finishOnboarding()">Skip</button>
+    <button class="ob-skip" data-act="finishOnboarding">Skip</button>
     <div class="ob-wrap">
       <div class="ob-slides" id="obSlides">
 
@@ -854,7 +854,7 @@ input { font: inherit; }
       </div>
       <div class="ob-dots" id="obDots"><i class="on"></i><i></i><i></i></div>
       <div class="ob-actions">
-        <button class="btn-primary" id="obNext" onclick="obNext()">Continue</button>
+        <button class="btn-primary" id="obNext" data-act="obNext">Continue</button>
       </div>
     </div>
   </section>
@@ -865,25 +865,25 @@ input { font: inherit; }
     <div class="map-fade"></div>
 
     <div class="topbar floating">
-      <button class="icon-btn" aria-label="Menu" onclick="go('settings')"><svg><use href="#i-menu"/></svg></button>
+      <button class="icon-btn" aria-label="Menu" data-act="go:settings"><svg><use href="#i-menu"/></svg></button>
       <span class="brand"><svg class="mark" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span class="brand-name">Arrive<b>O'Clock</b></span></span>
-      <button class="avatar" data-avatar onclick="go('profile')">A</button>
+      <button class="avatar" data-avatar data-act="go:profile">A</button>
     </div>
 
     <div style="position:absolute;top:62px;left:var(--s-4);right:var(--s-4);z-index:25;padding-top:env(safe-area-inset-top)">
-      <button class="searchbar" style="width:100%" onclick="openSearch()">
+      <button class="searchbar" style="width:100%" data-act="search">
         <svg><use href="#i-search"/></svg>
         <input placeholder="Where are you headed?" readonly tabindex="-1" style="pointer-events:none">
       </button>
     </div>
 
-    <button class="locate-fab" onclick="locateMe()" aria-label="Show my location"><svg><use href="#i-locate"/></svg></button>
+    <button class="locate-fab" data-act="locate" aria-label="Show my location"><svg><use href="#i-locate"/></svg></button>
 
     <div class="sheet" id="homeSheet">
       <div class="grip"></div>
       <div class="sheet-title"><h2>Quick start</h2><span>Pune</span></div>
       <div class="tile-grid">
-        <button class="tile feature" onclick="openSearch()">
+        <button class="tile feature" data-act="search">
           <div class="tile-ic"><svg><use href="#i-alarm"/></svg></div>
           <div>
             <h3>Arrival Alarm</h3>
@@ -892,23 +892,23 @@ input { font: inherit; }
           <span class="go"><svg><use href="#i-go"/></svg></span>
         </button>
 
-        <button class="tile" onclick="resumeJourney()">
+        <button class="tile" data-act="resume">
           <div class="tile-ic"><svg><use href="#i-route"/></svg></div>
           <div><h3>Ongoing</h3><p>Resume journey</p></div>
           <span class="badge" id="ongoingBadge" style="display:none">Live</span>
         </button>
 
-        <button class="tile" onclick="go('saved')">
+        <button class="tile" data-act="go:saved">
           <div class="tile-ic"><svg><use href="#i-bookmark"/></svg></div>
           <div><h3>Saved Places</h3><p>Home, Work +2</p></div>
         </button>
 
-        <button class="tile" onclick="go('review')">
+        <button class="tile" data-act="go:review">
           <div class="tile-ic"><svg><use href="#i-star"/></svg></div>
           <div><h3>Rate the app</h3><p>Reviews &amp; ideas</p></div>
         </button>
 
-        <button class="tile" onclick="go('settings')">
+        <button class="tile" data-act="go:settings">
           <div class="tile-ic"><svg><use href="#i-settings"/></svg></div>
           <div><h3>Settings</h3><p>Alarm, theme, account</p></div>
         </button>
@@ -919,7 +919,7 @@ input { font: inherit; }
   <!-- ============================= SEARCH ============================= -->
   <section class="view" id="search">
     <div class="page-head">
-      <button class="icon-btn back-btn" onclick="searchBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <button class="icon-btn back-btn" data-act="searchBack" aria-label="Back"><svg><use href="#i-back"/></svg></button>
       <h1 id="searchTitle">Set destination</h1>
     </div>
     <div style="padding:0 var(--s-4) var(--s-3)">
@@ -930,14 +930,14 @@ input { font: inherit; }
     </div>
     <div id="searchResults"></div>
     <div class="quick-row">
-      <button class="chip" onclick="pickSaved('home')"><span class="c-ic"><svg><use href="#i-home"/></svg></span><span>Home</span></button>
-      <button class="chip" onclick="pickSaved('work')"><span class="c-ic"><svg><use href="#i-work"/></svg></span><span>Work</span></button>
-      <button class="chip" onclick="go('saved')"><span class="c-ic"><svg><use href="#i-more"/></svg></span><span>More</span></button>
+      <button class="chip" data-act="saved:home"><span class="c-ic"><svg><use href="#i-home"/></svg></span><span>Home</span></button>
+      <button class="chip" data-act="saved:work"><span class="c-ic"><svg><use href="#i-work"/></svg></span><span>Work</span></button>
+      <button class="chip" data-act="go:saved"><span class="c-ic"><svg><use href="#i-more"/></svg></span><span>More</span></button>
     </div>
     <div class="view-scroll">
-      <div class="list-label"><span class="lbl">Recent</span><button style="width:30px;height:30px" class="icon-btn" onclick="clearRecents()" aria-label="Clear"><svg style="width:16px;height:16px"><use href="#i-trash"/></svg></button></div>
+      <div class="list-label"><span class="lbl">Recent</span><button style="width:30px;height:30px" class="icon-btn" data-act="clearRecents" aria-label="Clear"><svg style="width:16px;height:16px"><use href="#i-trash"/></svg></button></div>
       <div id="recentList"></div>
-      <button class="text-link" onclick="toast('Showing full history')">More from recent history</button>
+      <button class="text-link" data-act="toast:Showing full history">More from recent history</button>
     </div>
   </section>
 
@@ -946,19 +946,19 @@ input { font: inherit; }
     <div class="map route-live" id="routeMap"></div>
     <div class="map-fade top"></div>
     <div class="topbar floating">
-      <button class="icon-btn" onclick="go('search')" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <button class="icon-btn" data-act="go:search" aria-label="Back"><svg><use href="#i-back"/></svg></button>
     </div>
 
     <div class="route-card">
       <div class="grip"></div>
       <div class="route-rows">
-        <div class="r-node" onclick="openPicker('origin')">
+        <div class="r-node" data-act="picker:origin">
           <div class="glyph"><div class="o"></div></div>
           <div class="label"><div class="k">From</div><div class="v" id="routeOrigin">Your location</div></div>
           <svg class="chev node-chev"><use href="#i-edit"/></svg>
-          <button class="icon-btn swap-btn" onclick="event.stopPropagation();swapRoute()" aria-label="Swap origin and destination"><svg><use href="#i-swap"/></svg></button>
+          <button class="icon-btn swap-btn" data-act="swap" aria-label="Swap origin and destination"><svg><use href="#i-swap"/></svg></button>
         </div>
-        <div class="r-node" onclick="openPicker('dest')">
+        <div class="r-node" data-act="picker:dest">
           <div class="glyph"><svg><use href="#i-pin"/></svg></div>
           <div class="label"><div class="k">To</div><div class="v" id="routeDest">Aditya Birla Memorial Hospital</div></div>
           <svg class="chev node-chev"><use href="#i-edit"/></svg>
@@ -966,10 +966,10 @@ input { font: inherit; }
       </div>
 
       <div class="mode-row" id="modeRow">
-        <button class="mode active" data-mode="car" data-min="28" data-km="21" onclick="setMode(this)"><svg><use href="#i-car"/></svg><span class="m-eta">28m</span></button>
-        <button class="mode" data-mode="bus" data-min="46" data-km="23" onclick="setMode(this)"><svg><use href="#i-bus"/></svg><span class="m-eta">46m</span></button>
-        <button class="mode" data-mode="metro" data-min="34" data-km="19" onclick="setMode(this)"><svg><use href="#i-metro"/></svg><span class="m-eta">34m</span></button>
-        <button class="mode" data-mode="train" data-min="52" data-km="26" onclick="setMode(this)"><svg><use href="#i-train"/></svg><span class="m-eta">52m</span></button>
+        <button class="mode active" data-mode="car" data-min="28" data-km="21" data-act="mode"><svg><use href="#i-car"/></svg><span class="m-eta">28m</span></button>
+        <button class="mode" data-mode="bus" data-min="46" data-km="23" data-act="mode"><svg><use href="#i-bus"/></svg><span class="m-eta">46m</span></button>
+        <button class="mode" data-mode="metro" data-min="34" data-km="19" data-act="mode"><svg><use href="#i-metro"/></svg><span class="m-eta">34m</span></button>
+        <button class="mode" data-mode="train" data-min="52" data-km="26" data-act="mode"><svg><use href="#i-train"/></svg><span class="m-eta">52m</span></button>
       </div>
 
       <div class="stat-row">
@@ -980,8 +980,8 @@ input { font: inherit; }
         <div class="stat"><div class="num" id="statEta">02:10</div><div class="lab">Arrival</div></div>
       </div>
 
-      <button class="btn-primary" onclick="startJourney()"><svg><use href="#i-nav"/></svg> Start Journey</button>
-      <button class="btn-secondary" onclick="go('sound')"><svg><use href="#i-music"/></svg> Change alarm sound</button>
+      <button class="btn-primary" data-act="start"><svg><use href="#i-nav"/></svg> Start Journey</button>
+      <button class="btn-secondary" data-act="go:sound"><svg><use href="#i-music"/></svg> Change alarm sound</button>
       <p class="hint">Alarm rings <b id="leadHintRoute">5 min</b> before you arrive · adjusts with live ETA</p>
     </div>
   </section>
@@ -1002,7 +1002,7 @@ input { font: inherit; }
           <div class="big"><span id="countMin">23</span> min</div>
           <div class="sub">until alarm · arriving <span id="liveEta">02:10</span></div>
         </div>
-        <button class="sb-stop" onclick="stopJourney()" aria-label="Stop alarm"><svg><use href="#i-close"/></svg></button>
+        <button class="sb-stop" data-act="stop" aria-label="Stop alarm"><svg><use href="#i-close"/></svg></button>
       </div>
     </div>
 
@@ -1014,7 +1014,7 @@ input { font: inherit; }
           <div class="v" id="liveDest">Aditya Birla Memorial Hospital</div>
           <div class="s" id="liveVia">On your way</div>
         </div>
-        <span class="tone-pill" onclick="go('sound')"><span class="sp-ic"><svg><use href="#i-bell"/></svg></span> <span id="liveTone">Lo-fi</span></span>
+        <span class="tone-pill" data-act="go:sound"><span class="sp-ic"><svg><use href="#i-bell"/></svg></span> <span id="liveTone">Lo-fi</span></span>
       </div>
       <div class="live-gps" id="liveGps">Live GPS · battery-saver</div>
       <div class="live-stats">
@@ -1023,14 +1023,14 @@ input { font: inherit; }
         <div class="live-stat"><div class="n" id="liveSpeed">44</div><div class="l" id="liveSpeedLabel">km/h</div></div>
       </div>
       <div class="track-bar"><div class="fill" id="trackFill" style="width:6%"></div></div>
-      <button class="btn-secondary" onclick="stopJourney()"><svg><use href="#i-close"/></svg> End journey &amp; cancel alarm</button>
+      <button class="btn-secondary" data-act="stop"><svg><use href="#i-close"/></svg> End journey &amp; cancel alarm</button>
     </div>
   </section>
 
   <!-- ============================= SOUND ============================= -->
   <section class="view full" id="sound">
     <div class="page-head">
-      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <button class="icon-btn back-btn" data-act="back" aria-label="Back"><svg><use href="#i-back"/></svg></button>
       <h1>Alarm sound</h1>
     </div>
     <div class="view-scroll">
@@ -1041,32 +1041,32 @@ input { font: inherit; }
       <div class="settings-group">
         <div class="gh">Behaviour</div>
         <div class="s-card">
-          <div class="s-row"><div class="s-ic"><svg><use href="#i-vibrate"/></svg></div><div class="s-body"><div class="t">Vibrate</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-          <div class="s-row"><div class="s-ic"><svg><use href="#i-bolt"/></svg></div><div class="s-body"><div class="t">Gradually increase volume</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-vibrate"/></svg></div><div class="s-body"><div class="t">Vibrate</div></div><div class="toggle on" data-act="toggle"></div></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-bolt"/></svg></div><div class="s-body"><div class="t">Gradually increase volume</div></div><div class="toggle" data-act="toggle"></div></div>
         </div>
       </div>
-      <div style="padding:var(--s-4)"><button class="btn-primary" onclick="goBack();toast('Sound saved')">Save</button></div>
+      <div style="padding:var(--s-4)"><button class="btn-primary" data-act="soundSaved">Save</button></div>
     </div>
   </section>
 
   <!-- ============================= SAVED PLACES ============================= -->
   <section class="view full" id="saved">
     <div class="page-head">
-      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <button class="icon-btn back-btn" data-act="back" aria-label="Back"><svg><use href="#i-back"/></svg></button>
       <h1>Saved places</h1>
     </div>
     <div class="view-scroll">
       <div class="settings-group">
         <div class="s-card" id="savedList"></div>
       </div>
-      <div style="padding:var(--s-4)"><button class="btn-secondary" onclick="openEditPlace(null)"><svg><use href="#i-plus"/></svg> Add a place</button></div>
+      <div style="padding:var(--s-4)"><button class="btn-secondary" data-act="addPlace"><svg><use href="#i-plus"/></svg> Add a place</button></div>
     </div>
   </section>
 
   <!-- ============================= EDIT / ADD SAVED PLACE ============================= -->
   <section class="view full" id="editPlace">
     <div class="page-head">
-      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <button class="icon-btn back-btn" data-act="back" aria-label="Back"><svg><use href="#i-back"/></svg></button>
       <h1 id="editTitle">Edit place</h1>
     </div>
     <div class="view-scroll">
@@ -1079,7 +1079,7 @@ input { font: inherit; }
       <div class="settings-group">
         <div class="gh">Location</div>
         <div class="s-card">
-          <div class="s-row" onclick="openPicker('editLocation')">
+          <div class="s-row" data-act="picker:editLocation">
             <div class="s-ic"><svg><use href="#i-pin"/></svg></div>
             <div class="s-body"><div class="t" id="editLocName">Tap to set location</div><div class="d" id="editLocAddr"></div></div>
             <svg class="chev"><use href="#i-chevron"/></svg>
@@ -1091,8 +1091,8 @@ input { font: inherit; }
         <div class="s-card" style="padding:var(--s-3) var(--s-4)"><div class="icon-row" id="editIconRow"></div></div>
       </div>
       <div style="padding:var(--s-4)">
-        <button class="btn-primary" onclick="saveEditPlace()">Save place</button>
-        <button class="btn-secondary" id="editDeleteBtn" onclick="deleteEditPlace()" style="margin-top:var(--s-3)"><svg><use href="#i-trash"/></svg> Delete place</button>
+        <button class="btn-primary" data-act="saveEdit">Save place</button>
+        <button class="btn-secondary" id="editDeleteBtn" data-act="deleteEdit" style="margin-top:var(--s-3)"><svg><use href="#i-trash"/></svg> Delete place</button>
       </div>
     </div>
   </section>
@@ -1100,7 +1100,7 @@ input { font: inherit; }
   <!-- ============================= REVIEW ============================= -->
   <section class="view full" id="review">
     <div class="page-head">
-      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <button class="icon-btn back-btn" data-act="back" aria-label="Back"><svg><use href="#i-back"/></svg></button>
       <h1>Review &amp; suggestions</h1>
     </div>
     <div class="view-scroll" style="padding:0 var(--s-4)">
@@ -1113,14 +1113,14 @@ input { font: inherit; }
         <button class="star" data-v="5"><svg><use href="#i-star"/></svg></button>
       </div>
       <textarea class="field" id="reviewText" placeholder="Tell us what worked, or suggest a feature…"></textarea>
-      <div style="margin-top:var(--s-4)"><button class="btn-primary" onclick="submitReview()">Send feedback</button></div>
+      <div style="margin-top:var(--s-4)"><button class="btn-primary" data-act="submitReview">Send feedback</button></div>
     </div>
   </section>
 
   <!-- ============================= PROFILE ============================= -->
   <section class="view full" id="profile">
     <div class="page-head">
-      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <button class="icon-btn back-btn" data-act="back" aria-label="Back"><svg><use href="#i-back"/></svg></button>
       <h1>Profile</h1>
     </div>
     <div class="view-scroll">
@@ -1135,9 +1135,9 @@ input { font: inherit; }
       </div>
       <div class="settings-group">
         <div class="s-card">
-          <div class="s-row" onclick="go('saved')"><div class="s-ic"><svg><use href="#i-bookmark"/></svg></div><div class="s-body"><div class="t">Saved places</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
-          <div class="s-row" onclick="go('settings')"><div class="s-ic"><svg><use href="#i-settings"/></svg></div><div class="s-body"><div class="t">Settings</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
-          <div class="s-row" onclick="go('review')"><div class="s-ic"><svg><use href="#i-star"/></svg></div><div class="s-body"><div class="t">Rate ArriveO'Clock</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" data-act="go:saved"><div class="s-ic"><svg><use href="#i-bookmark"/></svg></div><div class="s-body"><div class="t">Saved places</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" data-act="go:settings"><div class="s-ic"><svg><use href="#i-settings"/></svg></div><div class="s-body"><div class="t">Settings</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" data-act="go:review"><div class="s-ic"><svg><use href="#i-star"/></svg></div><div class="s-body"><div class="t">Rate ArriveO'Clock</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
         </div>
       </div>
     </div>
@@ -1146,7 +1146,7 @@ input { font: inherit; }
   <!-- ============================= SETTINGS ============================= -->
   <section class="view full" id="settings">
     <div class="page-head">
-      <button class="icon-btn back-btn" onclick="goBack()" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <button class="icon-btn back-btn" data-act="back" aria-label="Back"><svg><use href="#i-back"/></svg></button>
       <h1>Settings</h1>
     </div>
     <div class="view-scroll">
@@ -1157,8 +1157,8 @@ input { font: inherit; }
             <div class="s-ic"><svg><use href="#i-moon"/></svg></div>
             <div class="s-body"><div class="t">Theme</div><div class="d">Black &amp; white, day or night</div></div>
             <div class="segment" style="width:160px">
-              <button data-th="light" class="active" onclick="setTheme('light')">Light</button>
-              <button data-th="dark" onclick="setTheme('dark')">Dark</button>
+              <button data-th="light" class="active" data-act="theme:light">Light</button>
+              <button data-th="dark" data-act="theme:dark">Dark</button>
             </div>
           </div>
         </div>
@@ -1166,7 +1166,7 @@ input { font: inherit; }
       <div class="settings-group">
         <div class="gh">Alarm</div>
         <div class="s-card">
-          <div class="s-row" onclick="go('sound')"><div class="s-ic"><svg><use href="#i-music"/></svg></div><div class="s-body"><div class="t">Alarm sound</div></div><span class="val">Lo-fi</span><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" data-act="go:sound"><div class="s-ic"><svg><use href="#i-music"/></svg></div><div class="s-body"><div class="t">Alarm sound</div></div><span class="val">Lo-fi</span><svg class="chev"><use href="#i-chevron"/></svg></div>
           <div class="s-row"><div class="s-ic"><svg><use href="#i-clock"/></svg></div><div class="s-body"><div class="t">Lead time</div><div class="d">Ring before arrival</div></div>
             <div class="segment" id="leadSeg" style="width:188px">
               <button data-lead="2">2</button>
@@ -1175,14 +1175,14 @@ input { font: inherit; }
               <button data-lead="15">15</button>
             </div>
           </div>
-          <div class="s-row"><div class="s-ic"><svg><use href="#i-vibrate"/></svg></div><div class="s-body"><div class="t">Vibration</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-vibrate"/></svg></div><div class="s-body"><div class="t">Vibration</div></div><div class="toggle on" data-act="toggle"></div></div>
         </div>
       </div>
       <div class="settings-group">
         <div class="gh">Permissions</div>
         <div class="s-card">
-          <div class="s-row"><div class="s-ic"><svg><use href="#i-pin"/></svg></div><div class="s-body"><div class="t">Location access</div><div class="d">Always — needed for live ETA</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-          <div class="s-row"><div class="s-ic"><svg><use href="#i-bell"/></svg></div><div class="s-body"><div class="t">Notifications</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-pin"/></svg></div><div class="s-body"><div class="t">Location access</div><div class="d">Always — needed for live ETA</div></div><div class="toggle on" data-act="toggle"></div></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-bell"/></svg></div><div class="s-body"><div class="t">Notifications</div></div><div class="toggle on" data-act="toggle"></div></div>
         </div>
       </div>
       <div class="settings-group">
@@ -1194,9 +1194,9 @@ input { font: inherit; }
               <button data-unit="mi">mi</button>
             </div>
           </div>
-          <div class="s-row" onclick="go('review')"><div class="s-ic"><svg><use href="#i-help"/></svg></div><div class="s-body"><div class="t">Help &amp; feedback</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
-          <div class="s-row" onclick="replayOnboarding()"><div class="s-ic"><svg><use href="#i-bolt"/></svg></div><div class="s-body"><div class="t">Replay intro</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
-          <div class="s-row" onclick="signOut()"><div class="s-ic"><svg><use href="#i-shield"/></svg></div><div class="s-body"><div class="t" style="color:var(--text)">Sign out</div></div></div>
+          <div class="s-row" data-act="go:review"><div class="s-ic"><svg><use href="#i-help"/></svg></div><div class="s-body"><div class="t">Help &amp; feedback</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" data-act="replayOnboarding"><div class="s-ic"><svg><use href="#i-bolt"/></svg></div><div class="s-body"><div class="t">Replay intro</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" data-act="signOut"><div class="s-ic"><svg><use href="#i-shield"/></svg></div><div class="s-body"><div class="t" style="color:var(--text)">Sign out</div></div></div>
         </div>
       </div>
       <p style="text-align:center;color:var(--text-3);font-size:var(--t-xs);padding:var(--s-5)">ArriveO'Clock · v2.0 · Pune</p>
@@ -1208,7 +1208,7 @@ input { font: inherit; }
     <div class="ring-ic"><svg viewBox="0 0 24 24"><use href="#i-bell"/></svg></div>
     <h1>Almost there</h1>
     <p>You arrive at <b id="alarmDest">your stop</b> in about 5 minutes. Time to get ready.</p>
-    <button class="ring-btn" onclick="dismissAlarm()">Dismiss</button>
+    <button class="ring-btn" data-act="dismiss">Dismiss</button>
   </div>
 
   <!-- ============================= TOAST ============================= -->
@@ -1216,10 +1216,10 @@ input { font: inherit; }
 
   <!-- ============================= TAB BAR ============================= -->
   <nav class="tabbar" id="tabbar">
-    <button class="tab active" data-go="home" onclick="tabGo('home')"><svg><use href="#i-map"/></svg><span>Map</span></button>
-    <button class="tab" data-go="search" onclick="tabGo('search')"><svg><use href="#i-alarm"/></svg><span>Alarm</span></button>
-    <button class="tab" data-go="active" onclick="tabGo('active')"><svg><use href="#i-nav"/></svg><span>Journey</span></button>
-    <button class="tab" data-go="profile" onclick="tabGo('profile')"><svg><use href="#i-user"/></svg><span>Profile</span></button>
+    <button class="tab active" data-go="home" data-act="tab:home"><svg><use href="#i-map"/></svg><span>Map</span></button>
+    <button class="tab" data-go="search" data-act="tab:search"><svg><use href="#i-alarm"/></svg><span>Alarm</span></button>
+    <button class="tab" data-go="active" data-act="tab:active"><svg><use href="#i-nav"/></svg><span>Journey</span></button>
+    <button class="tab" data-go="profile" data-act="tab:profile"><svg><use href="#i-user"/></svg><span>Profile</span></button>
   </nav>
 
 </div>

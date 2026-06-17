@@ -1,5 +1,3 @@
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import { TILES_STYLE_SOURCE, TILES_GLYPHS, DEFAULT_CENTER } from './config.js';
 
 // ---------------------------------------------------------------------------
@@ -7,7 +5,26 @@ import { TILES_STYLE_SOURCE, TILES_GLYPHS, DEFAULT_CENTER } from './config.js';
 // tiles (OpenMapTiles schema), styled to a strict grayscale palette. Works
 // globally with no API key. A black/white animated line draws the route.
 // If tiles fail to load (offline), we fall back to an illustrative SVG map.
+//
+// MapLibre (~800 kB) is CODE-SPLIT: it's dynamically imported the first time a
+// real map is needed, so onboarding/login load without it.
 // ---------------------------------------------------------------------------
+
+let maplibregl = null;
+let libPromise = null;
+function ensureLib() {
+  if (maplibregl) return Promise.resolve(maplibregl);
+  if (!libPromise) {
+    libPromise = Promise.all([
+      import('maplibre-gl'),
+      import('maplibre-gl/dist/maplibre-gl.css'),
+    ]).then(([mod]) => {
+      maplibregl = mod.default;
+      return maplibregl;
+    });
+  }
+  return libPromise;
+}
 
 const PALETTE = {
   light: {
@@ -147,8 +164,9 @@ function stopDash(entry) {
 // ===========================================================================
 // Public API
 // ===========================================================================
-export function showOverview(containerId, center) {
+export async function showOverview(containerId, center) {
   try {
+    await ensureLib();
     const entry = getOrCreate(containerId);
     const { map } = entry;
     const c = center || DEFAULT_CENTER;
@@ -160,9 +178,10 @@ export function showOverview(containerId, center) {
   }
 }
 
-export function showRoute(containerId, origin, dest, coordinates, opts = {}) {
+export async function showRoute(containerId, origin, dest, coordinates, opts = {}) {
   if (!coordinates || !coordinates.length) return;
   try {
+    await ensureLib();
     const entry = getOrCreate(containerId);
     const { map } = entry;
     const theme = currentTheme();
@@ -230,9 +249,9 @@ function setAccuracyCircle(entry, lng, lat, accuracyM) {
 // Show (or move) the live "you are here" marker on any map — used on the home
 // overview. Draws a translucent accuracy ring when an accuracy radius is known
 // (so an approximate desktop/Wi-Fi fix reads honestly). Optionally recentres.
-export function setUserMarker(containerId, lng, lat, center, accuracyM) {
+export async function setUserMarker(containerId, lng, lat, center, accuracyM) {
   let entry;
-  try { entry = getOrCreate(containerId); } catch { return; }
+  try { await ensureLib(); entry = getOrCreate(containerId); } catch { return; }
   const { map } = entry;
   // HTML markers don't need the style loaded, so add immediately.
   if (!entry.markers.user) {

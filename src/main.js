@@ -649,12 +649,68 @@ async function afterLogin() {
   renderProfile();
 }
 
+// Continue without an account (shared by the action map + window export).
+async function doGuest() {
+  auth.continueAsGuest();
+  try { localStorage.setItem('aoc_onboarded', '1'); } catch { /* ignore */ }
+  await afterLogin();
+  el('onboarding')?.classList.remove('active');
+  go('home', true);
+  locateOnHome();
+}
+
+// Declarative action map — values for `data-act="verb:arg"` on buttons/rows.
+// Replaces inline onclick handlers so the CSP can forbid inline scripts.
+const ACTIONS = {
+  back: () => goBack(),
+  searchBack: () => searchBack(),
+  search: () => openSearch(),
+  go: (a) => go(a),
+  tab: (a) => tabGo(a),
+  picker: (a) => openPicker(a),
+  saved: (a) => pickSaved(a),
+  theme: (a) => setTheme(a),
+  toast: (a) => toast(a),
+  mode: (_a, elm) => applyMode(elm.dataset.mode),
+  swap: () => swapRoute(),
+  start: () => startJourney(),
+  stop: () => stopJourney(),
+  dismiss: () => dismissAlarm(),
+  resume: () => resumeJourney(),
+  locate: () => locateOnHome(true),
+  addPlace: () => openEditPlace(null),
+  saveEdit: () => saveEditPlace(),
+  deleteEdit: () => deleteEditPlace(),
+  submitReview: () => submitReview(),
+  signIn: () => auth.signInWithGoogle(),
+  signOut: () => auth.signOut(),
+  guest: () => doGuest(),
+  finishOnboarding: () => finishOnboarding(),
+  obNext: () => obNext(),
+  replayOnboarding: () => replayOnboarding(),
+  clearRecents: async () => { await db.clearRecents(); renderRecents(); toast('History cleared'); },
+  soundSaved: () => { goBack(); toast('Sound saved'); },
+  toggle: (_a, elm) => elm.classList.toggle('on'),
+};
+
 // ===========================================================================
 // Global delegated click handling (for dynamically rendered rows)
 // ===========================================================================
 function wireDelegation() {
   document.addEventListener('click', async (e) => {
     const t = e.target;
+
+    // Declarative actions (replaces inline onclick handlers → strict CSP).
+    const actEl = t.closest?.('[data-act]');
+    if (actEl) {
+      const spec = actEl.dataset.act;
+      const i = spec.indexOf(':');
+      const verb = i === -1 ? spec : spec.slice(0, i);
+      const arg = i === -1 ? undefined : spec.slice(i + 1);
+      const fn = ACTIONS[verb];
+      if (fn) fn(arg, actEl);
+      return;
+    }
 
     // star rating
     const star = t.closest?.('.star');
@@ -761,7 +817,8 @@ async function init() {
   enableSheetDrag(el('homeSheet'));
   wireSearch();
   wireDelegation();
-  mapView.showOverview('homeMap', null);
+  // The map (and its ~800 kB MapLibre chunk) loads lazily when Home is shown —
+  // not during onboarding/login.
 
   let onboarded = false;
   try { onboarded = localStorage.getItem('aoc_onboarded') === '1'; } catch { /* ignore */ }
@@ -815,14 +872,7 @@ Object.assign(window, {
   clearRecents: async () => { await db.clearRecents(); renderRecents(); toast('History cleared'); },
   signIn: () => auth.signInWithGoogle(),
   signOut: () => auth.signOut(),
-  continueAsGuest: async () => {
-    auth.continueAsGuest();
-    try { localStorage.setItem('aoc_onboarded', '1'); } catch { /* ignore */ }
-    await afterLogin();
-    el('onboarding')?.classList.remove('active');
-    go('home', true);
-    locateOnHome();
-  },
+  continueAsGuest: () => doGuest(),
 });
 
 init();
