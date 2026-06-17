@@ -1,0 +1,36 @@
+# Codemagic CI — build the ArriveO'Clock Android app in the cloud (no Android
+# Studio needed locally). Connect this repo at codemagic.io, pick the
+# "android-debug" workflow, run it, then download + sideload the APK.
+#
+# Debug APK is auto-signed with a debug key → installable on your own phone
+# (enable "install unknown apps"). For a Play Store release you'd add a release
+# workflow with a signing keystore configured in Codemagic.
+
+workflows:
+  android-debug:
+    name: ArriveO'Clock Android (debug)
+    max_build_duration: 60
+    environment:
+      node: 20
+      java: 17
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Build web (Vite)
+        script: npm run build
+      - name: Capacitor sync → Android
+        script: npx cap sync android
+      - name: Build debug APK
+        script: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          # - you@example.com   # <-- add your email to get the APK by mail
+        notify:
+          success: true
+          failure: true
