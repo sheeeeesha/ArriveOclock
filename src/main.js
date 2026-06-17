@@ -311,7 +311,7 @@ async function recomputeRoute() {
   renderModeEtas();
   applyMode(state.mode);
   const r = state.routes[state.mode];
-  if (r) mapView.showRoute('routeMap', state.origin, state.dest, r.coordinates, { live: false });
+  if (r) mapView.showRoute('routeMap', state.origin, state.dest, r.coordinates, { live: false, draggable: true, onDrag: handlePinDrag });
 }
 
 function resetRouteStats() {
@@ -343,7 +343,7 @@ function applyMode(modeKey) {
   el('statKm').innerHTML = `${dist}<span style="font-size:.5em;font-weight:600"> ${distUnit()}</span>`;
   el('statEta').textContent = clockFromNow(min);
   state.routeSummary = r.summary || '';
-  mapView.showRoute('routeMap', state.origin, state.dest, r.coordinates, { live: false });
+  mapView.showRoute('routeMap', state.origin, state.dest, r.coordinates, { live: false, draggable: true, onDrag: handlePinDrag });
 }
 
 function setMode(btn) {
@@ -353,6 +353,25 @@ function setMode(btn) {
 function clockFromNow(min) {
   const d = new Date(Date.now() + min * 60000);
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+// Dragging a map pin sets that endpoint precisely, then re-routes.
+function handlePinDrag(which, lngLat) {
+  const p = { lng: lngLat.lng, lat: lngLat.lat };
+  if (which === 'origin') {
+    state.origin = { name: 'Your start', address: '', lng: p.lng, lat: p.lat, fallback: false };
+    if (el('routeOrigin')) el('routeOrigin').textContent = 'Dropped start pin';
+  } else {
+    state.dest = { name: state.dest?.name || 'Destination', address: '', lng: p.lng, lat: p.lat };
+    if (el('routeDest')) el('routeDest').textContent = 'Dropped pin';
+  }
+  // Reverse-geocode a friendly label (best effort).
+  reverseGeocode(p.lng, p.lat).then((name) => {
+    if (!name) return;
+    if (which === 'origin') { state.origin.address = name; if (el('routeOrigin')) el('routeOrigin').textContent = 'Your start · ' + name; }
+    else { state.dest.name = name; if (el('routeDest')) el('routeDest').textContent = name; }
+  });
+  recomputeRoute();
 }
 
 function swapRoute() {

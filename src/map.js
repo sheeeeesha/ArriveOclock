@@ -185,14 +185,22 @@ export async function showRoute(containerId, origin, dest, coordinates, opts = {
     const entry = getOrCreate(containerId);
     const { map } = entry;
     const theme = currentTheme();
+    const draggable = !!opts.draggable;
+    entry.onDrag = opts.onDrag || null; // latest handler (markers attach once)
     const render = () => {
       map.resize();
       drawRouteLayers(map, coordinates, theme);
       entry.hasRoute = true;
-      if (!entry.markers.here) entry.markers.here = new maplibregl.Marker({ element: makeHereEl() }).setLngLat([origin.lng, origin.lat]).addTo(map);
-      else entry.markers.here.setLngLat([origin.lng, origin.lat]);
-      if (!entry.markers.dest) entry.markers.dest = new maplibregl.Marker({ element: makeDestEl(), anchor: 'bottom' }).setLngLat([dest.lng, dest.lat]).addTo(map);
-      else entry.markers.dest.setLngLat([dest.lng, dest.lat]);
+      if (!entry.markers.here) {
+        entry.markers.here = new maplibregl.Marker({ element: makeHereEl(), draggable }).setLngLat([origin.lng, origin.lat]).addTo(map);
+        entry.markers.here.on('dragend', () => { const ll = entry.markers.here.getLngLat(); entry.onDrag?.('origin', ll); });
+      } else entry.markers.here.setLngLat([origin.lng, origin.lat]);
+      entry.markers.here.setDraggable(draggable);
+      if (!entry.markers.dest) {
+        entry.markers.dest = new maplibregl.Marker({ element: makeDestEl(), anchor: 'bottom', draggable }).setLngLat([dest.lng, dest.lat]).addTo(map);
+        entry.markers.dest.on('dragend', () => { const ll = entry.markers.dest.getLngLat(); entry.onDrag?.('dest', ll); });
+      } else entry.markers.dest.setLngLat([dest.lng, dest.lat]);
+      entry.markers.dest.setDraggable(draggable);
       const bounds = coordinates.reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(coordinates[0], coordinates[0]));
       // Pad to keep the route clear of the top bar and bottom sheet, but scale
       // down on short canvases so MapLibre can always satisfy the fit.

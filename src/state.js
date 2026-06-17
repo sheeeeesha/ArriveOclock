@@ -15,7 +15,7 @@ export const state = {
   // routing
   origin: null, // { name, address, lng, lat }
   dest: null, // { name, address, lng, lat }
-  mode: 'car', // car | bus | metro | train
+  mode: 'bus', // bus | metro | train (public transport only)
   routes: {}, // mode -> { distance_m, duration_s, coordinates, summary }
   routeSummary: '', // human label for the active route, e.g. "via Metro Line 1"
 
@@ -65,8 +65,7 @@ export const TONES = [
 // `factor` adjusts route directness vs roads; `overheadMin` covers walking to
 // the stop, waiting, and transfers. Tuned to be realistic, not optimistic.
 export const MODES = {
-  car: { profile: 'driving-traffic', label: 'Car' },
-  bus: { profile: 'driving', label: 'Bus', factor: 1.15, kmh: 20, overheadMin: 6 },
-  metro: { profile: 'driving', label: 'Metro', factor: 0.9, kmh: 33, overheadMin: 7 },
-  train: { profile: 'driving', label: 'Train', factor: 1.0, kmh: 46, overheadMin: 10 },
+  bus: { label: 'Bus', factor: 1.15, kmh: 18, overheadMin: 7 },
+  metro: { label: 'Metro', factor: 1.0, kmh: 32, overheadMin: 6 },
+  train: { label: 'Train', factor: 1.05, kmh: 45, overheadMin: 12 },
 };

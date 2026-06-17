@@ -2,15 +2,16 @@ import { OSRM_URL } from './config.js';
 import { MODES } from './state.js';
 
 // ---------------------------------------------------------------------------
-// Routing + ETA for the PLANNING screen, all free / keyless:
+// Public-transit routing + ETA for the planning screen.
 //
-//   - Road geometry + driving ETA: OSRM (global, no key).
-//   - Real transit durations (bus/metro/train): /api/route → Transitous/MOTIS,
-//     overlaid on the OSRM road line; where no feed exists, a distance estimate
-//     is used (typical per-mode speed + dwell factor, see MODES in state.js).
+//   - Accurate path: /api/route → Google Directions transit (when a Google key
+//     is configured) returns the REAL duration, distance and route line that
+//     match Google Maps; or Transitous/MOTIS where an open feed exists.
+//   - Free fallback: OSRM gives the real road distance (shown as-is, no longer
+//     inflated by a per-mode factor); the duration is estimated from a typical
+//     per-mode speed + access/wait overhead (clearly an estimate).
 //
-// The live ALARM does NOT depend on any of this — it tracks your real GPS
-// motion (alarm.js), so it's accurate on any mode, anywhere, even offline.
+// The live ALARM doesn't depend on any of this — it tracks real GPS motion.
 // ---------------------------------------------------------------------------
 
 function haversine(a, b) {
@@ -37,16 +38,15 @@ function demoGeometry(origin, dest) {
   return coords;
 }
 
-function estimate(modeKey, baseM, baseS) {
-  const m = MODES[modeKey] || MODES.car;
-  if (modeKey === 'car') return { distance_m: baseM, duration_s: baseS };
-  const distance_m = baseM * (m.factor || 1);
-  // in-vehicle time at the mode's average speed + fixed access/wait overhead
-  const duration_s = (distance_m / 1000 / (m.kmh || 30)) * 3600 + (m.overheadMin || 0) * 60;
-  return { distance_m, duration_s };
+// Estimate when no real transit data is available. Distance shown is the real
+// road distance; only the duration is modelled (detour factor + speed + wait).
+function estimate(modeKey, baseM) {
+  const m = MODES[modeKey] || MODES.bus;
+  const duration_s = ((baseM / 1000) * (m.factor || 1) / (m.kmh || 25)) * 3600 + (m.overheadMin || 0) * 60;
+  return { distance_m: baseM, duration_s };
 }
 
-// Road geometry + driving distance/duration (OSRM, with offline fallback).
+// Real road distance + geometry from OSRM (offline/failure → straight estimate).
 async function roadBase(origin, dest) {
   try {
     const url =
@@ -63,7 +63,7 @@ async function roadBase(origin, dest) {
   }
 }
 
-// Real transit duration via the backend (null if unavailable / no feed).
+// Real transit data via the backend (Google / Transitous). null if unavailable.
 async function transitETA(origin, dest, mode) {
   try {
     const res = await fetch('/api/route', {
@@ -73,38 +73,48 @@ async function transitETA(origin, dest, mode) {
     });
     if (!res.ok) return null;
     const d = await res.json();
-    if (d && d.duration_s) return { duration_s: d.duration_s, summary: d.summary || '' };
+    if (d && d.duration_s) {
+      return {
+        duration_s: d.duration_s,
+        distance_m: d.distance_m || null,
+        coordinates: Array.isArray(d.coordinates) && d.coordinates.length ? d.coordinates : null,
+        summary: d.summary || '',
+      };
+    }
     return null;
   } catch {
     return null;
   }
 }
 
-function carResult(base) {
-  return { distance_m: base.m, duration_s: base.s, coordinates: base.coords, summary: '' };
-}
 async function transitResult(origin, dest, mode, base) {
   const real = await transitETA(origin, dest, mode);
-  if (real) return { distance_m: base.m, duration_s: real.duration_s, coordinates: base.coords, summary: real.summary };
-  const est = estimate(mode, base.m, base.s);
+  if (real) {
+    return {
+      distance_m: real.distance_m || base.m,
+      duration_s: real.duration_s,
+      coordinates: real.coordinates || base.coords,
+      summary: real.summary,
+    };
+  }
+  const est = estimate(mode, base.m);
   return { ...est, coordinates: base.coords, summary: '' };
 }
 
-// Single mode (kept for completeness).
+// Single mode.
 export async function getRoute(origin, dest, modeKey) {
   if (!origin || !dest) return null;
   const base = await roadBase(origin, dest);
-  if (modeKey === 'car') return carResult(base);
-  return transitResult(origin, dest, modeKey, base);
+  return transitResult(origin, dest, modeKey || 'bus', base);
 }
 
-// All modes — one OSRM call, transit overlaid per mode.
+// All public-transit modes — one OSRM base call, transit overlaid per mode.
 export async function getAllModes(origin, dest) {
   if (!origin || !dest) return {};
   const base = await roadBase(origin, dest);
-  const out = { car: carResult(base) };
+  const out = {};
   await Promise.all(
-    ['bus', 'metro', 'train'].map(async (k) => {
+    Object.keys(MODES).map(async (k) => {
       out[k] = await transitResult(origin, dest, k, base);
     })
   );

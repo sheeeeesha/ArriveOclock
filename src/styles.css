@@ -70,6 +70,20 @@
 .locate-fab:active { transform: scale(.92); background: var(--surface-2); }
 .locate-fab svg { width: 22px; height: 22px; }
 
+/* --- Drag-pins hint ------------------------------------------------------- */
+.drag-hint {
+  display: flex; align-items: center; gap: 6px;
+  font-size: var(--t-xs); color: var(--text-2);
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--r-2); padding: 8px 10px; margin-bottom: var(--s-3);
+}
+.drag-hint svg { width: 14px; height: 14px; flex: none; }
+.drag-hint .ic { stroke: var(--text-2); }
+.drag-hint b { color: var(--text); font-weight: 600; }
+/* draggable map markers */
+.mb-here, .mb-pin { cursor: grab; }
+.maplibregl-marker:active { cursor: grabbing; }
+
 /* --- Configurable route rows --------------------------------------------- */
 .r-node { cursor: pointer; }
 .node-chev { width: 16px; height: 16px; flex: none; opacity: .45; }
