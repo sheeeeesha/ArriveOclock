@@ -4,7 +4,7 @@ import { state, TONES } from './state.js';
 import * as auth from './auth.js';
 import * as db from './db.js';
 import { searchPlacesDebounced, reverseGeocode } from './geocode.js';
-import { getAllModes } from './directions.js';
+import { getAllModes, getRoute } from './directions.js';
 import { getCurrentPosition } from './geolocation.js';
 import * as mapView from './map.js';
 import * as alarm from './alarm.js';
@@ -434,9 +434,43 @@ function dismissAlarm() {
   state.navStack = [];
   go('home', true);
 }
-function resumeJourney() {
-  if (state.journeyActive) go('active');
-  else toast('No journey in progress');
+async function resumeJourney() {
+  if (state.journeyActive) { go('active'); return; }
+  const resumed = await resumeActiveJourney();
+  if (!resumed) toast('No journey in progress');
+}
+
+// Restore an in-progress journey (e.g. after a page reload). The journey row
+// persists in storage; we rebuild state, recompute the route geometry, and
+// restart live tracking from the current position.
+async function resumeActiveJourney() {
+  if (state.journeyActive) return true;
+  let j;
+  try { j = await db.getActiveJourney(); } catch { j = null; }
+  if (!j) return false;
+  const oLng = j.origin_lng ?? j.originLng, oLat = j.origin_lat ?? j.originLat;
+  const dLng = j.dest_lng ?? j.destLng, dLat = j.dest_lat ?? j.destLat;
+  if (dLng == null || dLat == null) return false;
+  state.dest = { name: j.dest_label ?? j.destLabel ?? 'Destination', address: '', lng: dLng, lat: dLat };
+  state.origin = { name: 'Your location', address: '', lng: oLng, lat: oLat, fallback: oLng == null };
+  state.mode = j.mode || 'car';
+  state.journeyId = j.id;
+
+  // Need route geometry for distance-along-route tracking; recompute it.
+  if (state.origin.lng != null) {
+    const route = await getRoute(state.origin, state.dest, state.mode);
+    if (route) state.routes[state.mode] = route;
+  }
+  const r = state.routes[state.mode];
+  state.journeyActive = true;
+  if (el('ongoingBadge')) el('ongoingBadge').style.display = 'inline-block';
+  if (el('liveDest')) el('liveDest').textContent = state.dest.name;
+  if (el('liveTone')) el('liveTone').textContent = state.tone;
+  go('active', true);
+  if (r) mapView.showRoute('activeMap', state.origin, state.dest, r.coordinates, { live: true });
+  alarm.begin();
+  toast('Resumed your journey');
+  return true;
 }
 
 // ===========================================================================
@@ -692,7 +726,11 @@ async function init() {
   if (onboarded) {
     el('onboarding').classList.remove('active');
     routeAfterAuth();
-    if (state.user) locateOnHome();
+    if (state.user) {
+      // Resume an in-progress journey if one exists; otherwise locate on home.
+      const resumed = await resumeActiveJourney();
+      if (!resumed) locateOnHome();
+    }
   }
 
   // Backstop: the OAuth session can land just after init (redirect round-trip).
