@@ -1,5 +1,6 @@
 import { state, distFromKm, speedFromKmh } from './state.js';
 import { getCurrentPosition, geolocationAvailable, watchPosition } from './geolocation.js';
+import { isNative, startBackgroundTracking, stopBackgroundTracking, fireNativeAlarm } from './native.js';
 import { updateUserLocation } from './map.js';
 import { playTone, stopTone } from './sound.js';
 import { updateJourney } from './db.js';
@@ -103,10 +104,12 @@ function fire() {
   el('alarmRing').classList.add('show');
   if (state.vibrate && navigator.vibrate) navigator.vibrate([500, 250, 500, 250, 500]);
   playTone(state.tone);
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('Almost there', {
-      body: `You arrive at ${state.dest?.name || 'your stop'} in about ${state.leadTimeMin} min.`,
-    });
+  const body = `You arrive at ${state.dest?.name || 'your stop'} in about ${state.leadTimeMin} min.`;
+  if (isNative) {
+    // Works even when backgrounded / screen off.
+    fireNativeAlarm('Almost there', body);
+  } else if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('Almost there', { body });
   }
   if (state.journeyId) updateJourney(state.journeyId, { alarm_fired: true });
 }
@@ -133,12 +136,20 @@ export function begin() {
     try { Notification.requestPermission(); } catch { /* legacy */ }
   }
 
-  simulate = !geolocationAvailable() || (state.origin && state.origin.fallback);
-  setGpsStatus(simulate ? 'Simulated trip (no live GPS)' : 'Live GPS · battery-saver');
+  if (isNative) {
+    // Native: continuous background tracking keeps the engine alive with the
+    // screen off; each fix feeds the same processFix().
+    simulate = false;
+    setGpsStatus('Live GPS · background tracking');
+    startBackgroundTracking((loc) => processFix(loc));
+  } else {
+    simulate = !geolocationAvailable() || (state.origin && state.origin.fallback);
+    setGpsStatus(simulate ? 'Simulated trip (no live GPS)' : 'Live GPS · battery-saver');
+    if (!simulate) scheduleFix(0);
+  }
 
   paint();
   startTicker();
-  if (!simulate) scheduleFix(0);
 }
 
 function startTicker() {
@@ -267,6 +278,7 @@ export function end() {
   clearInterval(tickTimer);
   clearTimeout(fixTimer);
   stopWatch();
+  stopBackgroundTracking();
   stopTone();
   if (state.journeyId) updateJourney(state.journeyId, { status: 'cancelled', ended_at: new Date().toISOString() });
 }
@@ -275,6 +287,7 @@ export function silence() {
   clearInterval(tickTimer);
   clearTimeout(fixTimer);
   stopWatch();
+  stopBackgroundTracking();
   stopTone();
   if (state.journeyId) updateJourney(state.journeyId, { status: 'completed', ended_at: new Date().toISOString() });
 }

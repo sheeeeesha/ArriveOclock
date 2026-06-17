@@ -9,6 +9,7 @@ import { getCurrentPosition } from './geolocation.js';
 import * as mapView from './map.js';
 import * as alarm from './alarm.js';
 import { chirp, previewTone } from './sound.js';
+import { isNative } from './native.js';
 
 const el = (id) => document.getElementById(id);
 // Escape text before inserting via innerHTML — names/addresses come from
@@ -860,6 +861,9 @@ async function init() {
   enableSheetDrag(el('homeSheet'));
   wireSearch();
   wireDelegation();
+  // On native, background tracking works — the "keep screen open" web caveat
+  // doesn't apply, so drop that note.
+  if (isNative) document.querySelector('.keep-open')?.remove();
   // The map (and its ~800 kB MapLibre chunk) loads lazily when Home is shown —
   // not during onboarding/login.
 

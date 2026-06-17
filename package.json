@@ -10,6 +10,11 @@
     "preview": "vite preview --port 4321"
   },
   "dependencies": {
+    "@capacitor-community/background-geolocation": "^1.2.26",
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/local-notifications": "^6.1.3",
     "@supabase/supabase-js": "^2.45.4",
     "maplibre-gl": "^4.7.1"
   },

@@ -1,0 +1,10 @@
+{
+  "appId": "com.arriveoclock.app",
+  "appName": "ArriveO'Clock",
+  "webDir": "dist",
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon"
+    }
+  }
+}
