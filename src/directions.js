@@ -39,11 +39,18 @@ function demoGeometry(origin, dest) {
 }
 
 // Estimate when no real transit data is available. Distance shown is the real
-// road distance; only the duration is modelled (detour factor + speed + wait).
-function estimate(modeKey, baseM) {
+// road distance. Duration uses OSRM's real road TIME (lightly slowed for transit
+// stops) rather than a flat speed model, plus an access/wait overhead that
+// SCALES with trip length and is capped — so a 1 km hop isn't dominated by a
+// full transit-wait penalty (that bug showed ~10 min for 1 km).
+function estimate(modeKey, baseM, baseS) {
   const m = MODES[modeKey] || MODES.transit || Object.values(MODES)[0];
-  const duration_s = ((baseM / 1000) * (m.factor || 1) / (m.kmh || 25)) * 3600 + (m.overheadMin || 0) * 60;
-  return { distance_m: baseM, duration_s };
+  const km = baseM / 1000;
+  const moveS = baseS && baseS > 0
+    ? baseS * (m.factor || 1.3)              // real road time, slowed for stops
+    : (km / (m.kmh || 24)) * 3600;           // fallback speed model
+  const overheadMin = Math.min(m.overheadMin || 5, 0.5 + km * 0.5); // scaled + capped
+  return { distance_m: baseM, duration_s: moveS + overheadMin * 60 };
 }
 
 // Real road distance + geometry from OSRM (offline/failure → straight estimate).
@@ -97,7 +104,7 @@ async function transitResult(origin, dest, mode, base) {
       summary: real.summary,
     };
   }
-  const est = estimate(mode, base.m);
+  const est = estimate(mode, base.m, base.s);
   return { ...est, coordinates: base.coords, summary: '' };
 }
 
