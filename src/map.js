@@ -197,9 +197,40 @@ export function updateUserLocation(containerId, lng, lat) {
   if (entry?.markers?.here) entry.markers.here.setLngLat([lng, lat]);
 }
 
+// Build a geographic circle polygon (so it scales with zoom, like a real
+// accuracy radius) of `radiusM` metres around a point.
+function circlePolygon(lng, lat, radiusM, steps = 64) {
+  const coords = [];
+  const dLat = radiusM / 111320;
+  const dLng = radiusM / (111320 * Math.cos((lat * Math.PI) / 180));
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * 2 * Math.PI;
+    coords.push([lng + dLng * Math.cos(a), lat + dLat * Math.sin(a)]);
+  }
+  return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [coords] } };
+}
+
+function setAccuracyCircle(entry, lng, lat, accuracyM) {
+  const { map } = entry;
+  const data = circlePolygon(lng, lat, accuracyM);
+  const c = PALETTE[currentTheme()];
+  const apply = () => {
+    if (map.getSource('accuracy')) {
+      map.getSource('accuracy').setData(data);
+      return;
+    }
+    map.addSource('accuracy', { type: 'geojson', data });
+    map.addLayer({ id: 'accuracy-fill', type: 'fill', source: 'accuracy', paint: { 'fill-color': c.route, 'fill-opacity': 0.07 } });
+    map.addLayer({ id: 'accuracy-line', type: 'line', source: 'accuracy', paint: { 'line-color': c.route, 'line-opacity': 0.25, 'line-width': 1 } });
+  };
+  if (map.isStyleLoaded()) apply();
+  else map.once('load', apply);
+}
+
 // Show (or move) the live "you are here" marker on any map — used on the home
-// overview. Optionally recentres the map on the user.
-export function setUserMarker(containerId, lng, lat, center) {
+// overview. Draws a translucent accuracy ring when an accuracy radius is known
+// (so an approximate desktop/Wi-Fi fix reads honestly). Optionally recentres.
+export function setUserMarker(containerId, lng, lat, center, accuracyM) {
   let entry;
   try { entry = getOrCreate(containerId); } catch { return; }
   const { map } = entry;
@@ -209,6 +240,7 @@ export function setUserMarker(containerId, lng, lat, center) {
   } else {
     entry.markers.user.setLngLat([lng, lat]);
   }
+  if (accuracyM && accuracyM > 0) setAccuracyCircle(entry, lng, lat, accuracyM);
   if (center) map.easeTo({ center: [lng, lat], zoom: 14, duration: 700 });
 }
 

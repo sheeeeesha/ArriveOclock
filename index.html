@@ -982,7 +982,7 @@ input { font: inherit; }
 
       <button class="btn-primary" onclick="startJourney()"><svg><use href="#i-nav"/></svg> Start Journey</button>
       <button class="btn-secondary" onclick="go('sound')"><svg><use href="#i-music"/></svg> Change alarm sound</button>
-      <p class="hint">Alarm rings <b>5 min</b> before you arrive · adjusts with live ETA</p>
+      <p class="hint">Alarm rings <b id="leadHintRoute">5 min</b> before you arrive · adjusts with live ETA</p>
     </div>
   </section>
 
@@ -992,7 +992,7 @@ input { font: inherit; }
     <div class="map-fade"></div>
 
     <div class="status-banner">
-      <div class="sb-top"><svg><use href="#i-bell"/></svg> Alarm set · rings 5 min before arrival</div>
+      <div class="sb-top"><svg><use href="#i-bell"/></svg> Alarm set · rings <span id="leadHintBanner">5 min</span> before arrival</div>
       <div class="sb-main">
         <div class="sb-ring">
           <svg viewBox="0 0 56 56"><circle class="track" cx="28" cy="28" r="24"/><circle class="prog" id="ringProg" cx="28" cy="28" r="24" stroke-dasharray="150.8" stroke-dashoffset="0"/></svg>
@@ -1167,7 +1167,14 @@ input { font: inherit; }
         <div class="gh">Alarm</div>
         <div class="s-card">
           <div class="s-row" onclick="go('sound')"><div class="s-ic"><svg><use href="#i-music"/></svg></div><div class="s-body"><div class="t">Alarm sound</div></div><span class="val">Lo-fi</span><svg class="chev"><use href="#i-chevron"/></svg></div>
-          <div class="s-row"><div class="s-ic"><svg><use href="#i-clock"/></svg></div><div class="s-body"><div class="t">Lead time</div><div class="d">Ring before arrival</div></div><span class="val">5 min</span></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-clock"/></svg></div><div class="s-body"><div class="t">Lead time</div><div class="d">Ring before arrival</div></div>
+            <div class="segment" id="leadSeg" style="width:188px">
+              <button data-lead="2">2</button>
+              <button data-lead="5">5</button>
+              <button data-lead="10">10</button>
+              <button data-lead="15">15</button>
+            </div>
+          </div>
           <div class="s-row"><div class="s-ic"><svg><use href="#i-vibrate"/></svg></div><div class="s-body"><div class="t">Vibration</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
         </div>
       </div>

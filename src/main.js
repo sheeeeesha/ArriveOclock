@@ -35,7 +35,7 @@ function go(id, fromTab) {
   if (id === 'home') {
     mapView.showOverview('homeMap', state.origin && !state.origin.fallback ? state.origin : null);
     // If we already know the user's real position, drop the marker instantly.
-    if (state.origin && !state.origin.fallback) mapView.setUserMarker('homeMap', state.origin.lng, state.origin.lat, false);
+    if (state.origin && !state.origin.fallback) mapView.setUserMarker('homeMap', state.origin.lng, state.origin.lat, false, state.origin.accuracy);
   }
   if (id === 'search') setTimeout(() => el('searchInput')?.focus(), 80);
   if (id === 'profile') renderStats();
@@ -49,9 +49,9 @@ async function locateOnHome(center = true) {
   state.origin = {
     name: 'Your location',
     address: state.origin && !state.origin.fallback ? state.origin.address : 'Current position',
-    lng: pos.lng, lat: pos.lat, fallback: false,
+    lng: pos.lng, lat: pos.lat, accuracy: pos.accuracy, fallback: false,
   };
-  mapView.setUserMarker('homeMap', pos.lng, pos.lat, center);
+  mapView.setUserMarker('homeMap', pos.lng, pos.lat, center, pos.accuracy);
   reverseGeocode(pos.lng, pos.lat).then((name) => { if (name) state.origin.address = name; });
 }
 function tabGo(id) {
@@ -148,6 +148,21 @@ async function renderStats() {
   if (el('statTrips')) el('statTrips').textContent = s.trips;
   if (el('statMissed')) el('statMissed').textContent = s.missed;
   if (el('statHours')) el('statHours').textContent = (Number.isInteger(s.hours) ? s.hours : s.hours.toFixed(1)) + 'h';
+}
+
+// Reflect the current alarm lead time across the settings control + all hints.
+function renderLead() {
+  const n = state.leadTimeMin;
+  document.querySelectorAll('#leadSeg button').forEach((b) => b.classList.toggle('active', +b.dataset.lead === n));
+  const txt = `${n} min`;
+  if (el('leadHintRoute')) el('leadHintRoute').textContent = txt;
+  if (el('leadHintBanner')) el('leadHintBanner').textContent = txt;
+}
+function setLeadTime(n) {
+  state.leadTimeMin = n;
+  db.updateProfile({ lead_time_min: n });
+  renderLead();
+  toast(`Alarm will ring ${n} min before arrival`);
 }
 
 // ===========================================================================
@@ -609,6 +624,8 @@ async function afterLogin() {
   state.vibrate = p.vibrate ?? true;
   state.units = p.units || 'km';
   if (p.theme) setTheme(p.theme);
+  renderLead();
+  renderTones();
   await Promise.all([db.getRecents(), db.getSavedPlaces()]);
   renderRecents();
   renderSaved();
@@ -635,6 +652,13 @@ function wireDelegation() {
     if (edit) {
       const place = state.saved.find((p) => String(p.id) === edit.dataset.edit);
       if (place) openEditPlace(place);
+      return;
+    }
+
+    // lead-time selector (Settings)
+    const lead = t.closest?.('[data-lead]');
+    if (lead) {
+      setLeadTime(+lead.dataset.lead);
       return;
     }
 
@@ -708,6 +732,7 @@ async function init() {
   // UI wiring that doesn't depend on the signed-in user.
   state.tone = 'Lo-fi';
   renderTones();
+  renderLead();
   enableSheetDrag(el('homeSheet'));
   wireSearch();
   wireDelegation();
