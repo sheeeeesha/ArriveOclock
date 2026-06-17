@@ -8,6 +8,9 @@ export const supabase = hasSupabase
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        // PKCE: an intercepted OAuth code is useless without the verifier held
+        // only by this client — important for the native custom-scheme deep link.
+        flowType: 'pkce',
       },
     })
   : null;
