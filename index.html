@@ -783,6 +783,23 @@ input { font: inherit; }
     </defs>
   </svg>
 
+  <!-- ============================= WAITLIST (web only) ============================= -->
+  <section class="view full" id="waitlist">
+    <div class="login-wrap">
+      <svg class="login-mark mark" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      <div class="ob-kicker" style="margin-bottom:var(--s-3)">Coming soon</div>
+      <h1 class="login-title">A mobile app is on the way.</h1>
+      <p class="login-sub">We're building a native app that wakes you up <b>even with your phone locked</b>. Want early access? Drop your email and we'll let you know.</p>
+      <div class="login-actions">
+        <div class="searchbar" style="height:54px;margin-bottom:var(--s-2)"><svg><use href="#i-user"/></svg>
+          <input id="waitlistEmail" type="email" inputmode="email" placeholder="you@email.com" autocomplete="email"></div>
+        <button class="btn-primary" data-act="waitlistJoin">Join the waitlist</button>
+        <button class="btn-secondary" data-act="waitlistSkip" style="margin-top:var(--s-2)">No thanks, continue</button>
+        <p class="login-fine">We'll only email you about the app launch. No spam.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- ============================= LOGIN ============================= -->
   <section class="view full" id="login">
     <div class="login-wrap">

@@ -598,9 +598,9 @@ function obGo(i) {
 async function finishOnboarding() {
   try { localStorage.setItem('aoc_onboarded', '1'); } catch { /* private mode */ }
   el('onboarding').classList.remove('active');
-  routeAfterAuth();
-  // Ask for location and show the user's marker on the map.
-  locateOnHome();
+  gate();
+  // Only pre-warm location if we actually land on home now.
+  if (DEMO || state.user) locateOnHome();
 }
 function replayOnboarding() {
   obGo(0);
@@ -674,6 +674,31 @@ function routeAfterAuth() {
   }
 }
 
+// On web, show the mobile-app waitlist once (before the login screen) to
+// signed-out users. Never shown in the native app.
+function waitlistDone() {
+  try { return localStorage.getItem('aoc_waitlist') === '1'; } catch { return true; }
+}
+function gate() {
+  if (!isNative && !DEMO && !state.user && !state.guest && !waitlistDone()) {
+    go('waitlist', true);
+  } else {
+    routeAfterAuth();
+  }
+}
+function finishWaitlist() {
+  try { localStorage.setItem('aoc_waitlist', '1'); } catch { /* ignore */ }
+  routeAfterAuth();
+}
+async function waitlistJoin() {
+  const email = (el('waitlistEmail')?.value || '').trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('Enter a valid email'); return; }
+  try { await db.joinWaitlist(email); } catch { /* best effort */ }
+  toast("You're on the list!");
+  finishWaitlist();
+}
+function waitlistSkip() { finishWaitlist(); }
+
 async function afterLogin() {
   if (!state.user) state.user = await auth.getCurrentUser();
   if (!state.user) return;
@@ -730,6 +755,8 @@ const ACTIONS = {
   signOut: () => auth.signOut(),
   guest: () => doGuest(),
   finishOnboarding: () => finishOnboarding(),
+  waitlistJoin: () => waitlistJoin(),
+  waitlistSkip: () => waitlistSkip(),
   obNext: () => obNext(),
   replayOnboarding: () => replayOnboarding(),
   clearRecents: async () => { await db.clearRecents(); renderRecents(); toast('History cleared'); },
@@ -882,7 +909,7 @@ async function init() {
 
   if (onboarded) {
     el('onboarding').classList.remove('active');
-    routeAfterAuth();
+    gate();
     if (state.user) {
       // Resume an in-progress journey if one exists; otherwise locate on home.
       const resumed = await resumeActiveJourney();

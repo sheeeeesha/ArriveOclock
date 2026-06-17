@@ -284,6 +284,18 @@ export async function getActiveJourney() {
 }
 
 // ===========================================================================
+// Waitlist (mobile-app early access) — anonymous insert, no auth needed
+// ===========================================================================
+export async function joinWaitlist(email) {
+  if (DEMO) {
+    LS.write('aoc_waitlist_email', email);
+    return { ok: true };
+  }
+  const { error } = await supabase.from('waitlist').insert({ email });
+  return { ok: !error, error };
+}
+
+// ===========================================================================
 // Reviews
 // ===========================================================================
 export async function submitReview(review) {
