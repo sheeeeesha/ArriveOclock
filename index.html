@@ -1019,8 +1019,8 @@ input { font: inherit; }
       <div class="live-gps" id="liveGps">Live GPS · battery-saver</div>
       <div class="live-stats">
         <div class="live-stat"><div class="n" id="liveMin">28</div><div class="l">min left</div></div>
-        <div class="live-stat"><div class="n" id="liveKm">21</div><div class="l">km left</div></div>
-        <div class="live-stat"><div class="n" id="liveSpeed">44</div><div class="l">km/h</div></div>
+        <div class="live-stat"><div class="n" id="liveKm">21</div><div class="l" id="liveKmLabel">km left</div></div>
+        <div class="live-stat"><div class="n" id="liveSpeed">44</div><div class="l" id="liveSpeedLabel">km/h</div></div>
       </div>
       <div class="track-bar"><div class="fill" id="trackFill" style="width:6%"></div></div>
       <button class="btn-secondary" onclick="stopJourney()"><svg><use href="#i-close"/></svg> End journey &amp; cancel alarm</button>
@@ -1188,7 +1188,12 @@ input { font: inherit; }
       <div class="settings-group">
         <div class="gh">General</div>
         <div class="s-card">
-          <div class="s-row"><div class="s-ic"><svg><use href="#i-globe"/></svg></div><div class="s-body"><div class="t">Units</div></div><span class="val">Kilometres</span></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-globe"/></svg></div><div class="s-body"><div class="t">Units</div></div>
+            <div class="segment" id="unitSeg" style="width:150px">
+              <button data-unit="km">km</button>
+              <button data-unit="mi">mi</button>
+            </div>
+          </div>
           <div class="s-row" onclick="go('review')"><div class="s-ic"><svg><use href="#i-help"/></svg></div><div class="s-body"><div class="t">Help &amp; feedback</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
           <div class="s-row" onclick="replayOnboarding()"><div class="s-ic"><svg><use href="#i-bolt"/></svg></div><div class="s-body"><div class="t">Replay intro</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
           <div class="s-row" onclick="signOut()"><div class="s-ic"><svg><use href="#i-shield"/></svg></div><div class="s-body"><div class="t" style="color:var(--text)">Sign out</div></div></div>

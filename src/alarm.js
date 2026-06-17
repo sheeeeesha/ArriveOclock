@@ -1,4 +1,4 @@
-import { state } from './state.js';
+import { state, distFromKm, speedFromKmh } from './state.js';
 import { getCurrentPosition, geolocationAvailable, watchPosition } from './geolocation.js';
 import { updateUserLocation } from './map.js';
 import { playTone, stopTone } from './sound.js';
@@ -80,8 +80,8 @@ function paint() {
   const alarmMin = Math.max(0, Math.round(etaMin - lead));
   el('countMin').textContent = alarmMin;
   el('liveMin').textContent = Math.max(0, Math.round(etaMin));
-  el('liveKm').textContent = Math.max(0, L.leftKm).toFixed(1).replace(/\.0$/, '');
-  el('liveSpeed').textContent = Math.max(0, Math.round(L.speedKmh || 0));
+  el('liveKm').textContent = Math.max(0, distFromKm(L.leftKm)).toFixed(1).replace(/\.0$/, '');
+  el('liveSpeed').textContent = Math.max(0, Math.round(speedFromKmh(L.speedKmh || 0)));
   el('liveEta').textContent = fmtClock(etaMin);
 
   const denom = Math.max(1, L.totalMin - lead);

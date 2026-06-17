@@ -1,6 +1,6 @@
 import './styles.css';
 import { DEMO, logConfig } from './config.js';
-import { state, TONES } from './state.js';
+import { state, TONES, distUnit, distVal, speedUnit } from './state.js';
 import * as auth from './auth.js';
 import * as db from './db.js';
 import { searchPlacesDebounced, reverseGeocode } from './geocode.js';
@@ -165,6 +165,22 @@ function setLeadTime(n) {
   toast(`Alarm will ring ${n} min before arrival`);
 }
 
+// Reflect the distance/speed unit across the settings control + live labels,
+// and re-render the route stats if they're showing.
+function renderUnits() {
+  document.querySelectorAll('#unitSeg button').forEach((b) => b.classList.toggle('active', b.dataset.unit === state.units));
+  if (el('liveKmLabel')) el('liveKmLabel').textContent = distUnit() + ' left';
+  if (el('liveSpeedLabel')) el('liveSpeedLabel').textContent = speedUnit();
+  // Re-render the route stat in the new unit if one is already computed (the
+  // route DOM persists across screens, so this also covers settings → route).
+  if (state.routes[state.mode] && el('statKm') && el('statKm').textContent !== '—') applyMode(state.mode);
+}
+function setUnits(u) {
+  state.units = u;
+  db.updateProfile({ units: u });
+  renderUnits();
+}
+
 // ===========================================================================
 // Place selection → route flow
 // ===========================================================================
@@ -322,9 +338,9 @@ function applyMode(modeKey) {
   const r = state.routes[modeKey];
   if (!r) return;
   const min = Math.max(1, Math.round(r.duration_s / 60));
-  const km = (r.distance_m / 1000).toFixed(1).replace(/\.0$/, '');
+  const dist = distVal(r.distance_m).toFixed(1).replace(/\.0$/, '');
   el('statTime').innerHTML = `${min}<span style="font-size:.5em;font-weight:600"> min</span>`;
-  el('statKm').innerHTML = `${km}<span style="font-size:.5em;font-weight:600"> km</span>`;
+  el('statKm').innerHTML = `${dist}<span style="font-size:.5em;font-weight:600"> ${distUnit()}</span>`;
   el('statEta').textContent = clockFromNow(min);
   state.routeSummary = r.summary || '';
   mapView.showRoute('routeMap', state.origin, state.dest, r.coordinates, { live: false });
@@ -625,6 +641,7 @@ async function afterLogin() {
   state.units = p.units || 'km';
   if (p.theme) setTheme(p.theme);
   renderLead();
+  renderUnits();
   renderTones();
   await Promise.all([db.getRecents(), db.getSavedPlaces()]);
   renderRecents();
@@ -659,6 +676,13 @@ function wireDelegation() {
     const lead = t.closest?.('[data-lead]');
     if (lead) {
       setLeadTime(+lead.dataset.lead);
+      return;
+    }
+
+    // units selector (Settings)
+    const unit = t.closest?.('[data-unit]');
+    if (unit) {
+      setUnits(unit.dataset.unit);
       return;
     }
 
@@ -733,6 +757,7 @@ async function init() {
   state.tone = 'Lo-fi';
   renderTones();
   renderLead();
+  renderUnits();
   enableSheetDrag(el('homeSheet'));
   wireSearch();
   wireDelegation();

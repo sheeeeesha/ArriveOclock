@@ -36,6 +36,13 @@ export const state = {
   editing: null, // working copy of a saved place being added/edited
 };
 
+// Unit helpers honouring state.units ('km' | 'mi').
+export function distUnit() { return state.units === 'mi' ? 'mi' : 'km'; }
+export function distVal(meters) { return state.units === 'mi' ? meters / 1609.344 : meters / 1000; }
+export function distFromKm(km) { return state.units === 'mi' ? km * 0.621371 : km; }
+export function speedUnit() { return state.units === 'mi' ? 'mph' : 'km/h'; }
+export function speedFromKmh(kmh) { return state.units === 'mi' ? kmh * 0.621371 : kmh; }
+
 // Built-in alarm sounds — all synthesised with the Web Audio API in sound.js,
 // so there are zero binary audio assets to ship and they work offline.
 export const TONES = [
