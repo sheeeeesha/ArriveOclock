@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { getCurrentPosition, geolocationAvailable } from './geolocation.js';
+import { getCurrentPosition, geolocationAvailable, watchPosition } from './geolocation.js';
 import { updateUserLocation } from './map.js';
 import { playTone, stopTone } from './sound.js';
 import { updateJourney } from './db.js';
@@ -13,11 +13,16 @@ import { haversine } from './directions.js';
 //   • free + global + offline-capable (no network needed during the trip)
 //   • mode-agnostic (a 60 km/h train and an 18 km/h bus are handled the same)
 //
-// BATTERY: instead of a continuous high-accuracy watchPosition() stream, we
-// take one-shot fixes and sleep between them. The sleep length is computed from
-// how far you are from the alarm — minutes away when far, ~10 s when close —
-// and high-accuracy GPS only switches on near the destination. GPS is idle
-// between fixes; a cheap 1 s ticker animates the countdown in the meantime.
+// BATTERY + ACCURACY (hybrid sampling):
+//   • FAR  → spaced one-shot fixes; the gap scales with time-to-alarm (minutes
+//     apart when far) and uses low-power location. GPS is idle between fixes;
+//     a cheap 1 s ticker animates the countdown.
+//   • NEAR → once the alarm is within reach (≈<2 km or ≤ lead+3 min) we switch
+//     to a continuous high-accuracy watchPosition() so a STOP is detected
+//     within a second or two and can't trigger a premature alarm. The trip's
+//     final stretch is short, so the extra GPS use is brief.
+// A stop holds the ETA (we only advance it while speed > 0.4 m/s); it never
+// counts down to a false alarm while stationary.
 // ---------------------------------------------------------------------------
 
 const RING_CIRC = 2 * Math.PI * 24;
@@ -32,6 +37,8 @@ let routeCoords = null;
 let suffixLen = null; // cumulative metres from vertex i → end
 let fired = false;
 let simulate = false;
+let watchStop = null; // active continuous-watch unsubscribe (near destination)
+let watching = false;
 
 const el = (id) => document.getElementById(id);
 
@@ -91,6 +98,7 @@ function setGpsStatus(text) {
 function fire() {
   fired = true;
   clearTimeout(fixTimer);
+  stopWatch();
   el('alarmDest').textContent = state.dest?.name || 'your stop';
   el('alarmRing').classList.add('show');
   if (state.vibrate && navigator.vibrate) navigator.vibrate([500, 250, 500, 250, 500]);
@@ -104,6 +112,7 @@ function fire() {
 }
 
 export function begin() {
+  stopWatch(); // clear any leftover watch from a prior journey
   fired = false;
   lastFix = null;
   const route = state.routes[state.mode] || {};
@@ -164,20 +173,27 @@ function nextDelaySec(etaMin, remainingM) {
   return Math.min(300, Math.max(30, (etaMin - lead - 1) * 60 * 0.4));
 }
 
-async function doFix() {
-  if (fired) return;
+// We're "near" once the alarm is within reach — exactly the window where a
+// stop could otherwise cause a premature alarm, so we track continuously there.
+function isNear() {
   const L = state.live;
-  // Decide accuracy from the LAST known proximity (cheap when far).
-  const highAcc = (L.leftKm != null && L.leftKm < 4) || (measuredEtaMin != null && measuredEtaMin < 6);
-  const pos = await getCurrentPosition(highAcc);
+  return (
+    (L && L.leftKm != null && L.leftKm < 2) ||
+    (measuredEtaMin != null && measuredEtaMin <= state.leadTimeMin + 3)
+  );
+}
 
-  if (pos.fallback) {
+// Apply one position update (shared by the one-shot fixes and the watch).
+function processFix(pos) {
+  if (fired) return;
+  if (!pos || pos.fallback) {
     // Lost GPS — degrade to a simulated countdown so the alarm still fires.
     simulate = true;
+    stopWatch();
     setGpsStatus('GPS unavailable · estimating');
     return;
   }
-
+  const L = state.live;
   updateUserLocation('activeMap', pos.lng, pos.lat);
   const now = pos.ts || Date.now();
 
@@ -194,6 +210,8 @@ async function doFix() {
   L.leftKm = remainingM / 1000;
   L.speedKmh = speedMps * 3.6;
 
+  // Only advance the measured ETA while genuinely moving — a stop holds it
+  // (so it never counts down to a false alarm while stationary).
   if (speedMps > 0.4) {
     measuredEtaMin = remainingM / speedMps / 60;
     displayEtaSec = measuredEtaMin * 60; // resync the smooth ticker to truth
@@ -202,16 +220,53 @@ async function doFix() {
   lastFix = { lng: pos.lng, lat: pos.lat, t: now };
   paint();
 
-  if (measuredEtaMin - state.leadTimeMin <= 0) { fire(); return; }
+  if (measuredEtaMin - state.leadTimeMin <= 0) fire();
+}
 
-  const delay = nextDelaySec(measuredEtaMin, remainingM);
+// Spaced one-shot fix (battery-friendly), used while far from the destination.
+async function doFix() {
+  if (fired || watching) return;
+  const L = state.live;
+  const highAcc = (L.leftKm != null && L.leftKm < 4) || (measuredEtaMin != null && measuredEtaMin < 6);
+  const pos = await getCurrentPosition(highAcc);
+  processFix(pos);
+  if (fired || simulate) return;
+
+  // Near the destination → switch to continuous tracking so a stop is caught
+  // within a second or two (no premature alarm). Otherwise schedule the next
+  // spaced fix.
+  if (isNear()) { startWatch(); return; }
+  const delay = nextDelaySec(measuredEtaMin, (L.leftKm || 0) * 1000);
   setGpsStatus(`Live GPS · next check in ${Math.round(delay)}s${highAcc ? ' · precise' : ' · low-power'}`);
   scheduleFix(delay);
+}
+
+function startWatch() {
+  if (watching || fired || simulate) return;
+  watching = true;
+  clearTimeout(fixTimer);
+  setGpsStatus('Live GPS · continuous (approaching stop)');
+  watchStop = watchPosition((pos) => {
+    if (fired) return;
+    processFix(pos);
+    // If we somehow moved far again, drop back to battery-saving spaced fixes.
+    if (!fired && !simulate && watching && !isNear()) {
+      stopWatch();
+      scheduleFix(nextDelaySec(measuredEtaMin, (state.live.leftKm || 0) * 1000));
+    }
+  }, true);
+}
+
+function stopWatch() {
+  if (watchStop) watchStop();
+  watchStop = null;
+  watching = false;
 }
 
 export function end() {
   clearInterval(tickTimer);
   clearTimeout(fixTimer);
+  stopWatch();
   stopTone();
   if (state.journeyId) updateJourney(state.journeyId, { status: 'cancelled', ended_at: new Date().toISOString() });
 }
@@ -219,6 +274,7 @@ export function end() {
 export function silence() {
   clearInterval(tickTimer);
   clearTimeout(fixTimer);
+  stopWatch();
   stopTone();
   if (state.journeyId) updateJourney(state.journeyId, { status: 'completed', ended_at: new Date().toISOString() });
 }

@@ -31,3 +31,24 @@ export function getCurrentPosition(highAccuracy = true) {
 export function geolocationAvailable() {
   return 'geolocation' in navigator;
 }
+
+// Continuous high-frequency tracking — used only near the destination so a stop
+// is detected within a second or two (the spaced one-shot fixes elsewhere keep
+// battery use low). cb receives the same shape as getCurrentPosition, or
+// { fallback: true } on error. Returns a stop() function.
+export function watchPosition(cb, highAccuracy = true) {
+  if (!('geolocation' in navigator)) return () => {};
+  const id = navigator.geolocation.watchPosition(
+    (pos) =>
+      cb({
+        lng: pos.coords.longitude,
+        lat: pos.coords.latitude,
+        accuracy: pos.coords.accuracy,
+        speed: pos.coords.speed,
+        ts: pos.timestamp,
+      }),
+    () => cb({ fallback: true }),
+    { enableHighAccuracy: highAccuracy, maximumAge: 2000, timeout: 15000 }
+  );
+  return () => navigator.geolocation.clearWatch(id);
+}
