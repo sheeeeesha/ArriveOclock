@@ -72,10 +72,11 @@ export async function stopBackgroundTracking() {
   }
 }
 
-// Fire a local notification — shows + sounds even when the app is backgrounded.
+// Fire a local notification NOW — shows + sounds even when backgrounded.
 export async function fireNativeAlarm(title, body) {
   if (!(await ensure())) return;
   try {
+    await cancelBackupAlarm();        // we're ringing live; drop the scheduled backup
     await LN.schedule({
       notifications: [{
         id: Math.floor(Date.now() % 100000),
@@ -83,8 +84,40 @@ export async function fireNativeAlarm(title, body) {
         body,
         channelId: 'alarm',
         sound: 'alarm.wav',           // pre-Android-O fallback; O+ uses the channel sound
-        schedule: { at: new Date(Date.now() + 250) },
+        schedule: { at: new Date(Date.now() + 250), allowWhileIdle: true },
       }],
     });
   } catch { /* ignore */ }
+}
+
+// Fixed id so re-scheduling REPLACES the pending backup instead of stacking.
+const BACKUP_ID = 424242;
+
+// Schedule an OS-level alarm for the predicted arrival time. This is the
+// reliability backstop: AlarmManager (allowWhileIdle) delivers it even if the
+// WebView/JS is frozen, the app is killed, or the phone is in Doze — the exact
+// situations where the live, fix-driven fire() can't run. The live engine
+// reschedules this as GPS refines the ETA, and cancels it when it rings live.
+export async function scheduleBackupAlarm(whenMs, title, body) {
+  if (!(await ensure())) return;
+  // Already due (e.g. a stop closer than the lead time) → just ring now.
+  if (whenMs <= Date.now() + 1500) { await fireNativeAlarm(title, body); return; }
+  try {
+    await cancelBackupAlarm();
+    await LN.schedule({
+      notifications: [{
+        id: BACKUP_ID,
+        title,
+        body,
+        channelId: 'alarm',
+        sound: 'alarm.wav',
+        schedule: { at: new Date(whenMs), allowWhileIdle: true },
+      }],
+    });
+  } catch { /* ignore */ }
+}
+
+export async function cancelBackupAlarm() {
+  if (!LN) return;
+  try { await LN.cancel({ notifications: [{ id: BACKUP_ID }] }); } catch { /* ignore */ }
 }

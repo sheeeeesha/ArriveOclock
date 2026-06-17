@@ -52,4 +52,8 @@
     <!-- Fire the alarm notification -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Exact OS-scheduled backstop alarm that fires even when killed / in Doze.
+         USE_EXACT_ALARM is auto-granted for genuine alarm apps (this one). -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 </manifest>

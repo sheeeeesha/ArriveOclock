@@ -1,6 +1,6 @@
 import { state, distFromKm, speedFromKmh } from './state.js';
 import { getCurrentPosition, geolocationAvailable, watchPosition } from './geolocation.js';
-import { isNative, startBackgroundTracking, stopBackgroundTracking, fireNativeAlarm } from './native.js';
+import { isNative, startBackgroundTracking, stopBackgroundTracking, fireNativeAlarm, scheduleBackupAlarm, cancelBackupAlarm } from './native.js';
 import { updateUserLocation } from './map.js';
 import { playTone, stopTone } from './sound.js';
 import { updateJourney } from './db.js';
@@ -40,8 +40,22 @@ let fired = false;
 let simulate = false;
 let watchStop = null; // active continuous-watch unsubscribe (near destination)
 let watching = false;
+let backupFireMs = null; // when the OS-scheduled backstop alarm is currently set for
 
 const el = (id) => document.getElementById(id);
+
+// Keep an OS-level backstop alarm aligned with the current best ETA. AlarmManager
+// delivers it even if the WebView/JS is frozen or the app is killed (locked phone,
+// Doze) — so the alarm rings regardless of whether the live engine is awake.
+// Re-schedules only when the predicted time shifts > 20 s, to avoid churn.
+function refreshBackup() {
+  if (!isNative || fired || measuredEtaMin == null) return;
+  const whenMs = Date.now() + Math.max(0, (measuredEtaMin - state.leadTimeMin) * 60000);
+  if (backupFireMs != null && Math.abs(whenMs - backupFireMs) < 20000) return;
+  backupFireMs = whenMs;
+  const dest = state.dest?.name || 'your stop';
+  scheduleBackupAlarm(whenMs, 'Almost there', `You're arriving at ${dest} in about ${state.leadTimeMin} min.`);
+}
 
 function fmtClock(minFromNow) {
   const d = new Date(Date.now() + minFromNow * 60000);
@@ -141,6 +155,8 @@ export function begin() {
     // screen off; each fix feeds the same processFix().
     simulate = false;
     setGpsStatus('Live GPS · background tracking');
+    backupFireMs = null;
+    refreshBackup(); // arm the OS backstop immediately, from the planned ETA
     startBackgroundTracking((loc) => processFix(loc));
   } else {
     simulate = !geolocationAvailable() || (state.origin && state.origin.fallback);
@@ -227,6 +243,7 @@ function processFix(pos) {
     measuredEtaMin = remainingM / speedMps / 60;
     displayEtaSec = measuredEtaMin * 60; // resync the smooth ticker to truth
     L.totalMin = Math.max(L.totalMin, measuredEtaMin + state.leadTimeMin);
+    refreshBackup(); // re-align the OS backstop with the refined ETA
   }
   lastFix = { lng: pos.lng, lat: pos.lat, t: now };
   paint();
@@ -279,6 +296,7 @@ export function end() {
   clearTimeout(fixTimer);
   stopWatch();
   stopBackgroundTracking();
+  cancelBackupAlarm();
   stopTone();
   if (state.journeyId) updateJourney(state.journeyId, { status: 'cancelled', ended_at: new Date().toISOString() });
 }
@@ -288,6 +306,7 @@ export function silence() {
   clearTimeout(fixTimer);
   stopWatch();
   stopBackgroundTracking();
+  cancelBackupAlarm();
   stopTone();
   if (state.journeyId) updateJourney(state.journeyId, { status: 'completed', ended_at: new Date().toISOString() });
 }
