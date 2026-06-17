@@ -27,7 +27,12 @@ export default async function handler(req, res) {
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   body = body || {};
   const { origin, dest } = body;
-  if (!origin || !dest) { res.status(400).json({ error: 'missing_points' }); return; }
+  // Validate coordinates are real numbers in range — this endpoint only ever
+  // builds a geo query, so reject anything else (prevents proxy abuse).
+  const valid = (p) =>
+    p && Number.isFinite(p.lat) && Number.isFinite(p.lng) &&
+    Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
+  if (!valid(origin) || !valid(dest)) { res.status(400).json({ error: 'bad_points' }); return; }
   const transitMode = MODE_MAP[body.mode];
   if (!transitMode) { res.status(200).json({ error: 'not_transit' }); return; }
 

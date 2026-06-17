@@ -7,6 +7,7 @@
 <title>ArriveO'Clock</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/favicon.svg">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -786,13 +787,14 @@ input { font: inherit; }
     <div class="login-wrap">
       <svg class="login-mark mark" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
       <h1 class="login-title">ArriveO'Clock</h1>
-      <p class="login-sub">Sign in to sync your saved places, recent trips and alarm across devices.</p>
+      <p class="login-sub">Sign in to sync your saved places, recent trips and alarm across devices — or skip it and use the app right away.</p>
       <div class="login-actions">
         <button class="btn-primary" onclick="signIn()">
           <span class="gbtn-ic"><svg viewBox="0 0 24 24"><path class="ic" d="M21 12.2c0-.6-.1-1.2-.2-1.7H12v3.3h5.1a4.4 4.4 0 0 1-1.9 2.9v2.4h3.1c1.8-1.7 2.7-4.1 2.7-6.9z"/><path class="ic" d="M12 21c2.4 0 4.5-.8 6-2.2l-3.1-2.4c-.8.6-1.9.9-2.9.9-2.3 0-4.2-1.5-4.9-3.6H3.9v2.5A9 9 0 0 0 12 21z"/></svg></span>
           Continue with Google
         </button>
-        <p class="login-fine">By continuing you agree to be woken up before your stop. We only use your location to compute live ETA.</p>
+        <button class="btn-secondary" onclick="continueAsGuest()" style="margin-top:var(--s-2)">Continue without an account</button>
+        <p class="login-fine">No account needed. Without sign-in your data stays on this device only. We use your location solely to compute live ETA.</p>
       </div>
     </div>
   </section>

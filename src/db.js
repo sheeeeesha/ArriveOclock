@@ -1,5 +1,9 @@
 import { supabase } from './supabaseClient.js';
 import { DEMO } from './config.js';
+
+// "Local" mode = no backend (DEMO) OR the user chose to continue as a guest.
+// In both cases data lives in localStorage instead of Supabase.
+const local = () => DEMO || state.guest;
 import { state } from './state.js';
 
 // ---------------------------------------------------------------------------
@@ -49,7 +53,7 @@ function uid() {
 // Profile / preferences
 // ===========================================================================
 export async function loadProfile() {
-  if (DEMO) {
+  if (local()) {
     const p = LS.read('aoc_profile', {
       units: 'km',
       theme: 'light',
@@ -68,7 +72,7 @@ export async function loadProfile() {
 
 export async function updateProfile(patch) {
   state.profile = { ...(state.profile || {}), ...patch };
-  if (DEMO) {
+  if (local()) {
     LS.write('aoc_profile', state.profile);
     return;
   }
@@ -79,7 +83,7 @@ export async function updateProfile(patch) {
 // Saved places
 // ===========================================================================
 export async function getSavedPlaces() {
-  if (DEMO) {
+  if (local()) {
     const list = LS.read('aoc_saved', SEED_SAVED);
     state.saved = list;
     return list;
@@ -94,7 +98,7 @@ export async function getSavedPlaces() {
 }
 
 export async function addSavedPlace(place) {
-  if (DEMO) {
+  if (local()) {
     const list = LS.read('aoc_saved', SEED_SAVED);
     list.push({ id: uid(), icon: 'i-pin', kind: 'other', ...place });
     LS.write('aoc_saved', list);
@@ -114,7 +118,7 @@ export async function addSavedPlace(place) {
 }
 
 export async function updateSavedPlace(id, place) {
-  if (DEMO) {
+  if (local()) {
     const list = LS.read('aoc_saved', SEED_SAVED).map((p) =>
       p.id === id ? { ...p, ...place } : p
     );
@@ -137,7 +141,7 @@ export async function updateSavedPlace(id, place) {
 }
 
 export async function deleteSavedPlace(id) {
-  if (DEMO) {
+  if (local()) {
     const list = LS.read('aoc_saved', SEED_SAVED).filter((p) => p.id !== id);
     LS.write('aoc_saved', list);
     state.saved = list;
@@ -151,7 +155,7 @@ export async function deleteSavedPlace(id) {
 // Recent searches (capped to 20, deduped by name)
 // ===========================================================================
 export async function getRecents() {
-  if (DEMO) {
+  if (local()) {
     const list = LS.read('aoc_recents', SEED_RECENTS);
     state.recents = list;
     return list;
@@ -167,7 +171,7 @@ export async function getRecents() {
 }
 
 export async function addRecent(place) {
-  if (DEMO) {
+  if (local()) {
     let list = LS.read('aoc_recents', SEED_RECENTS).filter((r) => r.name !== place.name);
     list.unshift({ id: uid(), ...place });
     list = list.slice(0, 20);
@@ -188,7 +192,7 @@ export async function addRecent(place) {
 }
 
 export async function clearRecents() {
-  if (DEMO) {
+  if (local()) {
     LS.write('aoc_recents', []);
     state.recents = [];
     return;
@@ -201,7 +205,7 @@ export async function clearRecents() {
 // Journeys
 // ===========================================================================
 export async function createJourney(j) {
-  if (DEMO) {
+  if (local()) {
     const id = uid();
     LS.write('aoc_active_journey', { id, ...j });
     return id;
@@ -230,7 +234,7 @@ export async function createJourney(j) {
 
 export async function updateJourney(id, patch) {
   if (!id) return;
-  if (DEMO) {
+  if (local()) {
     const aj = LS.read('aoc_active_journey', null);
     if (aj) {
       Object.assign(aj, patch);
@@ -251,7 +255,7 @@ export async function updateJourney(id, patch) {
 // Aggregate trip stats for the profile screen.
 export async function getJourneyStats() {
   let list = [];
-  if (DEMO) {
+  if (local()) {
     list = LS.read('aoc_journey_log', []);
   } else if (state.user) {
     const { data } = await supabase
@@ -267,7 +271,7 @@ export async function getJourneyStats() {
 }
 
 export async function getActiveJourney() {
-  if (DEMO) return LS.read('aoc_active_journey', null);
+  if (local()) return LS.read('aoc_active_journey', null);
   const { data } = await supabase
     .from('journeys')
     .select('*')
@@ -283,7 +287,7 @@ export async function getActiveJourney() {
 // Reviews
 // ===========================================================================
 export async function submitReview(review) {
-  if (DEMO) {
+  if (local()) {
     const list = LS.read('aoc_reviews', []);
     list.push({ id: uid(), ...review, created_at: new Date().toISOString() });
     LS.write('aoc_reviews', list);

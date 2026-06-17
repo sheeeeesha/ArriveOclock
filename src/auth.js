@@ -24,15 +24,24 @@ const DEMO_USER = {
   name: 'Guest',
   avatar: '',
 };
+// A local guest (no account). Data stays on this device.
+export const GUEST_USER = {
+  id: 'guest-local',
+  email: '',
+  name: 'Guest',
+  avatar: '',
+};
 
 export async function getCurrentUser() {
   if (DEMO) return DEMO_USER;
+  if (state.guest) return GUEST_USER;
   const { data } = await supabase.auth.getUser();
   return mapUser(data?.user);
 }
 
 export async function getSession() {
   if (DEMO) return { user: DEMO_USER };
+  if (state.guest) return { user: GUEST_USER };
   const { data } = await supabase.auth.getSession();
   return data?.session;
 }
@@ -60,7 +69,20 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
+  if (state.guest) {
+    state.guest = false;
+    try { localStorage.removeItem('aoc_guest'); } catch { /* ignore */ }
+    window.location.reload();
+    return;
+  }
   if (DEMO) return;
   await supabase.auth.signOut();
   window.location.reload();
+}
+
+// Continue without an account — local-only mode.
+export function continueAsGuest() {
+  state.guest = true;
+  state.user = GUEST_USER;
+  try { localStorage.setItem('aoc_guest', '1'); } catch { /* ignore */ }
 }

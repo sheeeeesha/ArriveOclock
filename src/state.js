@@ -6,6 +6,7 @@ export const state = {
   // auth
   user: null, // { id, email, name, avatar }
   profile: null, // row from `profiles`
+  guest: false, // using the app locally without an account
 
   // data
   recents: [],

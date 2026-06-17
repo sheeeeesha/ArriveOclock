@@ -11,7 +11,12 @@ import * as alarm from './alarm.js';
 import { chirp, previewTone } from './sound.js';
 
 const el = (id) => document.getElementById(id);
-const escAttr = (s) => String(s).replace(/"/g, '&quot;');
+// Escape text before inserting via innerHTML — names/addresses come from
+// OpenStreetMap (third party) and user input, so they must not be trusted.
+const esc = (s) =>
+  String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+  );
 
 // ===========================================================================
 // Router
@@ -79,7 +84,7 @@ function renderRecents() {
       (r) => `
     <div class="recent-item" data-pick="recent:${r.id}">
       <div class="r-ic"><svg><use href="#i-clock"/></svg></div>
-      <div class="r-body"><div class="t">${r.name}</div><div class="s">${r.address || ''}</div></div>
+      <div class="r-body"><div class="t">${esc(r.name)}</div><div class="s">${esc(r.address)}</div></div>
       <div class="r-meta"><svg style="width:16px;height:16px"><use href="#i-go"/></svg></div>
     </div>`
     )
@@ -97,9 +102,9 @@ function renderSaved() {
     .map(
       (p) => `
     <div class="s-row">
-      <div class="s-ic" data-pick="saved:${p.id}"><svg><use href="#${p.icon || 'i-pin'}"/></svg></div>
-      <div class="s-body" data-pick="saved:${p.id}"><div class="t">${p.name}</div><div class="d">${p.address || ''}</div></div>
-      <button class="row-edit" data-edit="${p.id}" aria-label="Edit ${p.name}"><svg><use href="#i-edit"/></svg></button>
+      <div class="s-ic" data-pick="saved:${p.id}"><svg><use href="#${esc(p.icon || 'i-pin')}"/></svg></div>
+      <div class="s-body" data-pick="saved:${p.id}"><div class="t">${esc(p.name)}</div><div class="d">${esc(p.address)}</div></div>
+      <button class="row-edit" data-edit="${p.id}" aria-label="Edit ${esc(p.name)}"><svg><use href="#i-edit"/></svg></button>
     </div>`
     )
     .join('');
@@ -120,7 +125,9 @@ function renderProfile() {
   const initial = (state.user?.name || 'Y').trim().charAt(0).toUpperCase();
   document.querySelectorAll('[data-avatar]').forEach((a) => {
     if (state.user?.avatar) {
-      a.style.backgroundImage = `url(${state.user.avatar})`;
+      // Quote + strip quotes/parens from the URL so it can't break out of url().
+      const safe = String(state.user.avatar).replace(/["')\\]/g, '');
+      a.style.backgroundImage = `url("${safe}")`;
       a.style.backgroundSize = 'cover';
       // Google's default avatars are coloured — force grayscale to stay on-brand.
       a.style.filter = 'grayscale(1)';
@@ -435,6 +442,7 @@ function resumeJourney() {
 // ===========================================================================
 // Search input (live geocode)
 // ===========================================================================
+let searchHits = [];
 function wireSearch() {
   const input = el('searchInput');
   const results = el('searchResults');
@@ -447,13 +455,16 @@ function wireSearch() {
       return;
     }
     searchPlacesDebounced(q, (hits) => {
+      // Keep results in memory and reference them by index — never embed
+      // third-party JSON in an attribute (attribute-injection / XSS vector).
+      searchHits = hits;
       results.style.display = hits.length ? 'block' : 'none';
       results.innerHTML = hits
         .map(
-          (h) => `
-        <div class="recent-item" data-result='${escAttr(JSON.stringify(h))}'>
+          (h, i) => `
+        <div class="recent-item" data-result-idx="${i}">
           <div class="r-ic"><svg><use href="#i-pin"/></svg></div>
-          <div class="r-body"><div class="t">${h.name}</div><div class="s">${h.address || ''}</div></div>
+          <div class="r-body"><div class="t">${esc(h.name)}</div><div class="s">${esc(h.address)}</div></div>
         </div>`
         )
         .join('');
@@ -610,10 +621,11 @@ function wireDelegation() {
       return;
     }
 
-    // search result pick
-    const res = t.closest?.('[data-result]');
+    // search result pick (by index into the in-memory results)
+    const res = t.closest?.('[data-result-idx]');
     if (res) {
-      try { choosePlace(JSON.parse(res.dataset.result)); } catch { /* bad json */ }
+      const hit = searchHits[+res.dataset.resultIdx];
+      if (hit) choosePlace(hit);
       resetSearchInput();
       return;
     }
@@ -653,6 +665,12 @@ async function init() {
     setTimeout(() => history.replaceState(null, '', location.pathname + location.search), 0);
   }
 
+  // Register the service worker (production builds only — avoids caching the
+  // dev modules during local development).
+  if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+
   // UI wiring that doesn't depend on the signed-in user.
   state.tone = 'Lo-fi';
   renderTones();
@@ -663,6 +681,9 @@ async function init() {
 
   let onboarded = false;
   try { onboarded = localStorage.getItem('aoc_onboarded') === '1'; } catch { /* ignore */ }
+  // Restore a guest session (chosen "continue without an account") before
+  // resolving auth, so getCurrentUser returns the local guest user.
+  try { state.guest = localStorage.getItem('aoc_guest') === '1'; } catch { /* ignore */ }
 
   // Resolve auth BEFORE any user-scoped Supabase query.
   state.user = await auth.getCurrentUser();
@@ -677,6 +698,8 @@ async function init() {
   // Backstop: the OAuth session can land just after init (redirect round-trip).
   // When it does, finish login and move off the login/onboarding screen.
   auth.onAuthChange(async (user) => {
+    // A real Supabase sign-in supersedes any local guest session.
+    if (user && state.guest) { state.guest = false; try { localStorage.removeItem('aoc_guest'); } catch { /* ignore */ } }
     const prevId = state.user?.id || null;
     const justSignedIn = !!user && !prevId;
     state.user = user;
@@ -704,6 +727,14 @@ Object.assign(window, {
   clearRecents: async () => { await db.clearRecents(); renderRecents(); toast('History cleared'); },
   signIn: () => auth.signInWithGoogle(),
   signOut: () => auth.signOut(),
+  continueAsGuest: async () => {
+    auth.continueAsGuest();
+    try { localStorage.setItem('aoc_onboarded', '1'); } catch { /* ignore */ }
+    await afterLogin();
+    el('onboarding')?.classList.remove('active');
+    go('home', true);
+    locateOnHome();
+  },
 });
 
 init();
