@@ -41,7 +41,7 @@ function demoGeometry(origin, dest) {
 // Estimate when no real transit data is available. Distance shown is the real
 // road distance; only the duration is modelled (detour factor + speed + wait).
 function estimate(modeKey, baseM) {
-  const m = MODES[modeKey] || MODES.bus;
+  const m = MODES[modeKey] || MODES.transit || Object.values(MODES)[0];
   const duration_s = ((baseM / 1000) * (m.factor || 1) / (m.kmh || 25)) * 3600 + (m.overheadMin || 0) * 60;
   return { distance_m: baseM, duration_s };
 }
@@ -105,7 +105,7 @@ async function transitResult(origin, dest, mode, base) {
 export async function getRoute(origin, dest, modeKey) {
   if (!origin || !dest) return null;
   const base = await roadBase(origin, dest);
-  return transitResult(origin, dest, modeKey || 'bus', base);
+  return transitResult(origin, dest, modeKey || 'transit', base);
 }
 
 // All public-transit modes — one OSRM base call, transit overlaid per mode.

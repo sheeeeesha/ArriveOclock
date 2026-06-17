@@ -19,8 +19,9 @@
 const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
 const TRANSIT_API = process.env.TRANSIT_API || 'https://api.transitous.org';
 
-const GOOGLE_MODE = { bus: 'bus', metro: 'subway', train: 'rail' };
-const MOTIS_MODE = { bus: 'BUS', metro: 'SUBWAY', train: 'RAIL' };
+// '' = no transit_mode filter → Google returns the best available transit.
+const GOOGLE_MODE = { transit: '', bus: 'bus', metro: 'subway', train: 'rail' };
+const MOTIS_MODE = { transit: 'TRANSIT', bus: 'BUS', metro: 'SUBWAY', train: 'RAIL' };
 
 // Decode a Google encoded polyline → [[lng,lat], ...].
 function decodePolyline(str) {
@@ -43,10 +44,10 @@ async function viaGoogle(origin, dest, mode) {
     origin: `${origin.lat},${origin.lng}`,
     destination: `${dest.lat},${dest.lng}`,
     mode: 'transit',
-    transit_mode: GOOGLE_MODE[mode] || 'bus',
     departure_time: 'now',
     key: GOOGLE_KEY,
   });
+  if (GOOGLE_MODE[mode]) params.set('transit_mode', GOOGLE_MODE[mode]); // omit for generic transit
   const json = await (await fetch('https://maps.googleapis.com/maps/api/directions/json?' + params)).json();
   if (json.status !== 'OK' || !json.routes?.length) return { error: 'no_route', status: json.status };
   const route = json.routes[0];
@@ -94,7 +95,7 @@ export default async function handler(req, res) {
   const valid = (p) =>
     p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
   if (!valid(origin) || !valid(dest)) { res.status(400).json({ error: 'bad_points' }); return; }
-  const mode = GOOGLE_MODE[body.mode] ? body.mode : null;
+  const mode = Object.prototype.hasOwnProperty.call(GOOGLE_MODE, body.mode) ? body.mode : null;
   if (!mode) { res.status(200).json({ error: 'not_transit' }); return; }
 
   try {

@@ -15,7 +15,7 @@ export const state = {
   // routing
   origin: null, // { name, address, lng, lat }
   dest: null, // { name, address, lng, lat }
-  mode: 'bus', // bus | metro | train (public transport only)
+  mode: 'transit', // single generic public-transport mode (no picker)
   routes: {}, // mode -> { distance_m, duration_s, coordinates, summary }
   routeSummary: '', // human label for the active route, e.g. "via Metro Line 1"
 
@@ -64,8 +64,8 @@ export const TONES = [
 //   duration = distance * factor / avg-speed  +  fixed access/wait overhead.
 // `factor` adjusts route directness vs roads; `overheadMin` covers walking to
 // the stop, waiting, and transfers. Tuned to be realistic, not optimistic.
+// Single generic public-transport profile (the mode picker was removed since
+// it never affected the alarm). Used only for the keyless ETA estimate.
 export const MODES = {
-  bus: { label: 'Bus', factor: 1.15, kmh: 18, overheadMin: 7 },
-  metro: { label: 'Metro', factor: 1.0, kmh: 32, overheadMin: 6 },
-  train: { label: 'Train', factor: 1.05, kmh: 45, overheadMin: 12 },
+  transit: { label: 'Transit', factor: 1.05, kmh: 24, overheadMin: 7 },
 };
