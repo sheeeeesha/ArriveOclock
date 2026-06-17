@@ -56,7 +56,22 @@ export async function startBackgroundTracking(onLoc) {
         distanceFilter: 20,
       },
       (location, error) => {
-        if (error || !location) return;
+        if (error) {
+          // Android 11+ deliberately hides "Allow all the time" from the first
+          // prompt — the user can only pick "While using" there. Background
+          // access must be flipped on in Settings; route them there.
+          if (error.code === 'NOT_AUTHORIZED') {
+            try {
+              const ok = window.confirm(
+                'To wake you with the screen locked, ArriveO’Clock needs location set to “Allow all the time”.\n\n' +
+                'Android hides that option from the popup — open Settings to switch it on now?'
+              );
+              if (ok) BG.openSettings();
+            } catch { /* ignore */ }
+          }
+          return;
+        }
+        if (!location) return;
         onLoc({ lng: location.longitude, lat: location.latitude, speed: location.speed, ts: Date.now() });
       }
     );
