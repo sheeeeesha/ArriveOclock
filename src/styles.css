@@ -70,6 +70,17 @@
 .locate-fab:active { transform: scale(.92); background: var(--surface-2); }
 .locate-fab svg { width: 22px; height: 22px; }
 
+/* --- "Estimate only, we adapt" note (route screen) ------------------------ */
+.eta-note {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: var(--t-xs); color: var(--text-2); line-height: 1.45;
+  margin-bottom: var(--s-4);
+}
+.eta-note svg { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+.eta-note .ic { stroke: var(--text-3); }
+.eta-note .ic-fill { fill: var(--text-3); }
+.eta-note b { color: var(--text); font-weight: 600; }
+
 /* --- Drag-pins hint ------------------------------------------------------- */
 .drag-hint {
   display: flex; align-items: center; gap: 6px;
