@@ -27,10 +27,6 @@ workflows:
           ./gradlew assembleDebug
     artifacts:
       - android/app/build/outputs/**/*.apk
-    publishing:
-      email:
-        recipients:
-          # - you@example.com   # <-- add your email to get the APK by mail
-        notify:
-          success: true
-          failure: true
+    # The built APK appears under "Artifacts" on the build page — download it
+    # there. To also get it by email, add a publishing.email block (see
+    # docs.codemagic.io). Release/Play builds need a signing keystore.
