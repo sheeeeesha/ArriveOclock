@@ -34,4 +34,50 @@ workflows:
       - android/app/build/outputs/**/*.apk
     # The built APK appears under "Artifacts" on the build page — download it
     # there. To also get it by email, add a publishing.email block (see
-    # docs.codemagic.io). Release/Play builds need a signing keystore.
+    # docs.codemagic.io).
+
+  # ---------------------------------------------------------------------------
+  # Release workflow → signed Android App Bundle (.aab) for the Play Store.
+  #
+  # Create a Codemagic variable group named "android_signing" with:
+  #   ANDROID_KEYSTORE_BASE64   base64 of your upload .jks
+  #                             (base64 -w0 arriveoclock-upload.jks  → paste)
+  #   ANDROID_KEYSTORE_PASSWORD
+  #   ANDROID_KEY_ALIAS
+  #   ANDROID_KEY_PASSWORD
+  # Mark them "Secure". Keep the .jks + passwords backed up — losing them means
+  # you can never update the app.
+  # ---------------------------------------------------------------------------
+  android-release:
+    name: ArriveO'Clock Android (release AAB)
+    max_build_duration: 60
+    environment:
+      node: 20
+      java: 17
+      groups:
+        - supabase        # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+        - android_signing # keystore creds (see above)
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Build web (Vite)
+        script: npm run build
+      - name: Capacitor sync → Android
+        script: npx cap sync android
+      - name: Decode signing keystore
+        script: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$CM_BUILD_DIR/upload.jks"
+      - name: Build signed release AAB
+        script: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew bundleRelease \
+            -PANDROID_KEYSTORE_PATH="$CM_BUILD_DIR/upload.jks" \
+            -PANDROID_KEYSTORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD" \
+            -PANDROID_KEY_ALIAS="$ANDROID_KEY_ALIAS" \
+            -PANDROID_KEY_PASSWORD="$ANDROID_KEY_PASSWORD"
+    artifacts:
+      - android/app/build/outputs/bundle/release/*.aab
+    # Download the .aab from "Artifacts" and upload it to the Play Console, or
+    # wire automatic publishing with a publishing.google_play block + a
+    # service-account JSON (docs.codemagic.io/yaml-publishing/google-play).

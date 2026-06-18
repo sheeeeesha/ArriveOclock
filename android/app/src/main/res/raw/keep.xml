@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- alarm.wav is loaded by string URI (android.resource://.../raw/alarm) in
+     AlarmRinger, not via R.raw, so resource shrinking can't see it is used.
+     Keep it explicitly or the release build ships a silent alarm. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/alarm" />
