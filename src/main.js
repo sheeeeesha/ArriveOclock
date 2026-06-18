@@ -717,6 +717,26 @@ async function waitlistJoin() {
 }
 function waitlistSkip() { finishWaitlist(); }
 
+// Web landing page (full-bleed, outside the phone frame). Shown once before
+// entering the app; never on native. "Open app" dismisses it into the flow.
+function landingDone() {
+  try { return localStorage.getItem('aoc_entered') === '1'; } catch { return true; }
+}
+function enterApp() {
+  try { localStorage.setItem('aoc_entered', '1'); } catch { /* private mode */ }
+  el('landingPage')?.classList.remove('show');
+  let onboarded = false;
+  try { onboarded = localStorage.getItem('aoc_onboarded') === '1'; } catch { /* ignore */ }
+  if (onboarded) {
+    el('onboarding')?.classList.remove('active');
+    gate();
+    if (DEMO || state.user) locateOnHome();
+  }
+  // If not onboarded, the onboarding view is already active behind the landing
+  // and is simply revealed now.
+  window.scrollTo(0, 0);
+}
+
 async function afterLogin() {
   if (!state.user) state.user = await auth.getCurrentUser();
   if (!state.user) return;
@@ -788,6 +808,7 @@ const ACTIONS = {
   openLocationSettings: () => openNativeSettings(),
   openAppSettings: () => openNativeSettings(),
   shareApp: () => shareApp(),
+  enterApp: () => enterApp(),
 };
 
 // Open the device's settings page for this app (location "Allow all the time",
@@ -955,6 +976,12 @@ async function init() {
   // The map (and its ~800 kB MapLibre chunk) loads lazily when Home is shown —
   // not during onboarding/login.
 
+  // Web-only landing page. Show it up-front (before the async auth round-trip)
+  // for fresh visitors so there's no onboarding flash; auto-dismiss below if the
+  // visitor turns out to be already signed in / a returning guest.
+  const landingCandidate = !isNative && !DEMO && !landingDone();
+  if (landingCandidate) el('landingPage')?.classList.add('show');
+
   let onboarded = false;
   try { onboarded = localStorage.getItem('aoc_onboarded') === '1'; } catch { /* ignore */ }
   // Restore a guest session (chosen "continue without an account") before
@@ -964,6 +991,12 @@ async function init() {
   // Resolve auth BEFORE any user-scoped Supabase query.
   state.user = await auth.getCurrentUser();
   if (state.user) await afterLogin();
+
+  // Returning/authed visitors skip the landing entirely.
+  if (landingCandidate && (state.user || state.guest)) {
+    el('landingPage')?.classList.remove('show');
+    try { localStorage.setItem('aoc_entered', '1'); } catch { /* ignore */ }
+  }
 
   if (onboarded) {
     el('onboarding').classList.remove('active');

@@ -734,9 +734,172 @@ input { font: inherit; }
 @keyframes gpsPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* =====================================================================
+   Landing page (web only). Full-bleed marketing page that lives OUTSIDE
+   the app phone-frame. Shown once before entering the app; never native.
+   ===================================================================== */
+#landingPage { position: fixed; inset: 0; z-index: 300; display: none; overflow-y: auto; overflow-x: hidden; background: var(--bg); color: var(--text); scroll-behavior: smooth; }
+#landingPage.show { display: block; }
+.lp-wrap { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 48px); }
+#landingPage a { color: inherit; text-decoration: none; }
+
+.lp-nav { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: saturate(180%) blur(14px); -webkit-backdrop-filter: saturate(180%) blur(14px); border-bottom: 1px solid var(--line); }
+.lp-nav .lp-wrap { display: flex; align-items: center; justify-content: space-between; height: 66px; }
+.lp-brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -.02em; }
+.lp-brand svg { width: 28px; height: 28px; }
+.lp-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 22px; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-weight: 600; font-size: 15px; transition: transform .15s var(--ease), opacity .15s; white-space: nowrap; }
+.lp-btn:hover { transform: translateY(-1px); opacity: .92; }
+.lp-btn svg { width: 18px; height: 18px; }
+.lp-btn .ic { stroke: var(--accent-text); }
+.lp-btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line-strong); }
+.lp-btn.ghost .ic { stroke: var(--text); }
+.lp-nav .lp-btn { height: 42px; padding: 0 18px; font-size: 14px; }
+
+.lp-hero { padding: clamp(44px, 8vw, 104px) 0 clamp(40px, 6vw, 80px); }
+.lp-hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
+.lp-kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--text-2); margin-bottom: 24px; border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; }
+.lp-kicker .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--text); animation: gpsPulse 1.8s var(--ease) infinite; }
+.lp-h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.25rem, 5.4vw, 4.3rem); line-height: 1.02; letter-spacing: -.035em; margin: 0 0 22px; }
+.lp-sub { font-size: clamp(1.02rem, 1.5vw, 1.24rem); line-height: 1.5; color: var(--text-2); max-width: 32ch; margin: 0 0 32px; }
+.lp-actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.lp-actions .lp-btn { height: 54px; padding: 0 28px; font-size: 16px; }
+.lp-fine { font-size: 13px; color: var(--text-3); margin-top: 18px; }
+
+/* Hero phone mock */
+.lp-phonewrap { justify-self: center; }
+.lp-phone { width: clamp(220px, 24vw, 286px); aspect-ratio: 286 / 600; border-radius: 38px; background: var(--ink-900); padding: 11px; box-shadow: 0 40px 110px rgba(0,0,0,.22), 0 0 0 2px var(--ink-700); position: relative; }
+.lp-screen { width: 100%; height: 100%; border-radius: 28px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 26px; text-align: center; }
+.lp-screen .mk { width: 64px; height: 64px; }
+.lp-screen .mk .pin { fill: var(--text); } .lp-screen .mk .face { stroke: var(--text); }
+.lp-screen .st { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); }
+.lp-screen .bg { font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: -.03em; line-height: 1; }
+.lp-screen .sm { font-size: 13px; color: var(--text-2); }
+.lp-screen .pill { margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--accent-text); background: var(--accent); border-radius: 999px; padding: 8px 16px; }
+
+/* Sections */
+.lp-section { padding: clamp(44px, 6vw, 84px) 0; border-top: 1px solid var(--line); }
+.lp-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--text-3); text-align: center; margin-bottom: 14px; }
+.lp-h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.7rem, 3.4vw, 2.6rem); letter-spacing: -.03em; text-align: center; margin: 0 auto 48px; max-width: 18ch; line-height: 1.08; }
+.lp-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2vw, 24px); }
+.lp-card { border: 1px solid var(--line); border-radius: 22px; padding: clamp(22px, 2.4vw, 30px); background: var(--surface); }
+.lp-card .ci { width: 48px; height: 48px; border-radius: 14px; border: 1px solid var(--line); display: grid; place-items: center; margin-bottom: 18px; }
+.lp-card .ci svg { width: 24px; height: 24px; }
+.lp-card h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; letter-spacing: -.02em; margin: 0 0 8px; }
+.lp-card p { color: var(--text-2); font-size: .96rem; line-height: 1.5; margin: 0; }
+
+.lp-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 3vw, 40px); counter-reset: step; }
+.lp-step { position: relative; }
+.lp-step .n { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--text-3); letter-spacing: .1em; margin-bottom: 14px; }
+.lp-step h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.22rem; letter-spacing: -.02em; margin: 0 0 8px; }
+.lp-step p { color: var(--text-2); font-size: .96rem; line-height: 1.5; margin: 0; }
+.lp-step::before { content: ""; display: block; height: 1px; background: var(--line-strong); margin-bottom: 22px; }
+
+.lp-final { text-align: center; padding: clamp(56px, 8vw, 110px) 0; border-top: 1px solid var(--line); }
+.lp-final .lp-h2 { margin-bottom: 16px; }
+.lp-final p { color: var(--text-2); max-width: 40ch; margin: 0 auto 32px; font-size: 1.05rem; }
+
+.lp-footer { border-top: 1px solid var(--line); padding: 28px 0 40px; }
+.lp-footer .lp-wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: var(--text-3); font-size: 13px; }
+.lp-footer .lp-brand { font-size: 15px; color: var(--text-2); }
+.lp-footer .lp-brand svg { width: 22px; height: 22px; }
+
+/* Entrance */
+.lp-reveal { opacity: 0; transform: translateY(18px); animation: lpUp .7s var(--ease) forwards; }
+.lp-reveal.d1 { animation-delay: .07s } .lp-reveal.d2 { animation-delay: .14s } .lp-reveal.d3 { animation-delay: .21s }
+@keyframes lpUp { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .lp-reveal { animation: none; opacity: 1; transform: none; } }
+
+@media (max-width: 860px) {
+  .lp-hero-grid { grid-template-columns: 1fr; gap: clamp(36px, 8vw, 56px); }
+  .lp-hero { text-align: center; }
+  .lp-sub { margin-left: auto; margin-right: auto; }
+  .lp-actions { justify-content: center; }
+  .lp-phonewrap { order: -1; }
+  .lp-features, .lp-steps { grid-template-columns: 1fr; }
+  .lp-step::before { display: none; }
+}
+@media (max-width: 460px) {
+  .lp-nav .lp-btn span { display: none; }
+  .lp-nav .lp-btn { padding: 0 12px; }
+}
 </style>
 </head>
 <body>
+
+  <!-- ============================= LANDING (web only) ============================= -->
+  <div id="landingPage">
+    <nav class="lp-nav">
+      <div class="lp-wrap">
+        <span class="lp-brand"><svg class="mark" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Arrive<b>O'Clock</b></span>
+        <button class="lp-btn" data-act="enterApp"><span>Open app</span> <svg><use href="#i-go"/></svg></button>
+      </div>
+    </nav>
+
+    <header class="lp-hero">
+      <div class="lp-wrap lp-hero-grid">
+        <div>
+          <span class="lp-kicker lp-reveal"><span class="dot"></span> Live-ETA arrival alarm</span>
+          <h1 class="lp-h1 lp-reveal d1">Sleep on the metro.<br>We'll wake you at your stop.</h1>
+          <p class="lp-sub lp-reveal d2">ArriveO'Clock tracks your real movement and rings a few minutes before you arrive — no fixed timers, no guesswork. Free, and works in any city.</p>
+          <div class="lp-actions lp-reveal d3">
+            <button class="lp-btn" data-act="enterApp">Open ArriveO'Clock <svg><use href="#i-go"/></svg></button>
+            <a class="lp-btn ghost" href="#lp-how">See how it works</a>
+          </div>
+          <p class="lp-fine lp-reveal d3">No sign-up needed · your location stays on your device.</p>
+        </div>
+        <div class="lp-phonewrap lp-reveal d2">
+          <div class="lp-phone"><div class="lp-screen">
+            <svg class="mk" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            <div class="st">Arriving soon</div>
+            <div class="bg">Almost there</div>
+            <div class="sm">2 stops to Bhumkar Chowk</div>
+            <div class="pill">Wake me in 5 min</div>
+          </div></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="lp-section">
+      <div class="lp-wrap">
+        <div class="lp-eyebrow">Why ArriveO'Clock</div>
+        <h2 class="lp-h2">An alarm that follows your journey.</h2>
+        <div class="lp-features">
+          <div class="lp-card"><div class="ci"><svg><use href="#i-bolt"/></svg></div><h3>Timed off live ETA</h3><p>Traffic, slow trains, long stops — the alarm shifts with you and rings just before you actually arrive.</p></div>
+          <div class="lp-card"><div class="ci"><svg><use href="#i-globe"/></svg></div><h3>Works anywhere, free</h3><p>Any city, any bus, metro or train. No API keys, no subscription — and it keeps working offline.</p></div>
+          <div class="lp-card"><div class="ci"><svg><use href="#i-bell"/></svg></div><h3>Rings even when locked</h3><p>The mobile app wakes you with a full-screen alarm over the lock screen — pocket your phone and relax.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-section" id="lp-how">
+      <div class="lp-wrap">
+        <div class="lp-eyebrow">How it works</div>
+        <h2 class="lp-h2">Set it once. Doze off.</h2>
+        <div class="lp-steps">
+          <div class="lp-step"><div class="n">01</div><h3>Set your stop</h3><p>Search your destination, pick a saved place, or drop a pin on the map.</p></div>
+          <div class="lp-step"><div class="n">02</div><h3>Pick your lead time</h3><p>Choose how many minutes before arrival to wake you, plus an alarm tone.</p></div>
+          <div class="lp-step"><div class="n">03</div><h3>Relax</h3><p>We track your movement and ring just before your stop. That's it.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-final">
+      <div class="lp-wrap">
+        <h2 class="lp-h2">Never miss your stop again.</h2>
+        <p>Open ArriveO'Clock in your browser now — and grab the Android app for locked-screen alarms, coming soon.</p>
+        <button class="lp-btn" data-act="enterApp">Open ArriveO'Clock <svg><use href="#i-go"/></svg></button>
+      </div>
+    </section>
+
+    <footer class="lp-footer">
+      <div class="lp-wrap">
+        <span class="lp-brand"><svg class="mark" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>ArriveO'Clock</span>
+        <span>© 2026 ArriveO'Clock · Wake up at the right stop.</span>
+      </div>
+    </footer>
+  </div>
+
 <div class="stage">
 <div class="app" id="app">
 
