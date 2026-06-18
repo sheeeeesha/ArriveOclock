@@ -109,3 +109,12 @@ export async function cancelBackupAlarm() {
   if (!isNative) return;
   try { alarmPlugin().cancel(); } catch { /* ignore */ }
 }
+
+// Open this app's settings page (Permissions / Notifications), where the user
+// can set location to "Allow all the time" and manage notifications. Returns
+// false on web (no native settings to open).
+export async function openAppSettings() {
+  if (!isNative) return false;
+  if (!BG) BG = registerPlugin('BackgroundGeolocation');
+  try { await BG.openSettings(); return true; } catch { return false; }
+}

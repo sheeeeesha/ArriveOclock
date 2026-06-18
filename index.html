@@ -1153,7 +1153,7 @@ input { font: inherit; }
         <div class="s-card">
           <div class="s-row" data-act="go:saved"><div class="s-ic"><svg><use href="#i-bookmark"/></svg></div><div class="s-body"><div class="t">Saved places</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
           <div class="s-row" data-act="go:settings"><div class="s-ic"><svg><use href="#i-settings"/></svg></div><div class="s-body"><div class="t">Settings</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
-          <div class="s-row" data-act="go:review"><div class="s-ic"><svg><use href="#i-star"/></svg></div><div class="s-body"><div class="t">Rate ArriveO'Clock</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" id="rateRow" data-act="go:review"><div class="s-ic"><svg><use href="#i-star"/></svg></div><div class="s-body"><div class="t">Rate ArriveO'Clock</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
         </div>
       </div>
     </div>
@@ -1182,7 +1182,7 @@ input { font: inherit; }
       <div class="settings-group">
         <div class="gh">Alarm</div>
         <div class="s-card">
-          <div class="s-row" data-act="go:sound"><div class="s-ic"><svg><use href="#i-music"/></svg></div><div class="s-body"><div class="t">Alarm sound</div></div><span class="val">Lo-fi</span><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" data-act="go:sound"><div class="s-ic"><svg><use href="#i-music"/></svg></div><div class="s-body"><div class="t">Alarm sound</div></div><span class="val" id="soundVal">Lo-fi</span><svg class="chev"><use href="#i-chevron"/></svg></div>
           <div class="s-row"><div class="s-ic"><svg><use href="#i-clock"/></svg></div><div class="s-body"><div class="t">Lead time</div><div class="d">Ring before arrival</div></div>
             <div class="segment" id="leadSeg" style="width:188px">
               <button data-lead="2">2</button>
@@ -1191,14 +1191,14 @@ input { font: inherit; }
               <button data-lead="15">15</button>
             </div>
           </div>
-          <div class="s-row"><div class="s-ic"><svg><use href="#i-vibrate"/></svg></div><div class="s-body"><div class="t">Vibration</div></div><div class="toggle on" data-act="toggle"></div></div>
+          <div class="s-row"><div class="s-ic"><svg><use href="#i-vibrate"/></svg></div><div class="s-body"><div class="t">Vibration</div></div><div class="toggle on" id="vibToggle" data-act="toggleVibrate"></div></div>
         </div>
       </div>
       <div class="settings-group">
         <div class="gh">Permissions</div>
         <div class="s-card">
-          <div class="s-row"><div class="s-ic"><svg><use href="#i-pin"/></svg></div><div class="s-body"><div class="t">Location access</div><div class="d">Always — needed for live ETA</div></div><div class="toggle on" data-act="toggle"></div></div>
-          <div class="s-row"><div class="s-ic"><svg><use href="#i-bell"/></svg></div><div class="s-body"><div class="t">Notifications</div></div><div class="toggle on" data-act="toggle"></div></div>
+          <div class="s-row" data-act="openLocationSettings"><div class="s-ic"><svg><use href="#i-pin"/></svg></div><div class="s-body"><div class="t">Location · Allow all the time</div><div class="d">Required to wake you with the screen locked</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
+          <div class="s-row" data-act="openAppSettings"><div class="s-ic"><svg><use href="#i-bell"/></svg></div><div class="s-body"><div class="t">Notifications</div><div class="d">Tap to manage in system settings</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
         </div>
       </div>
       <div class="settings-group">

@@ -9,7 +9,7 @@ import { getCurrentPosition } from './geolocation.js';
 import * as mapView from './map.js';
 import * as alarm from './alarm.js';
 import { chirp, previewTone } from './sound.js';
-import { isNative } from './native.js';
+import { isNative, openAppSettings } from './native.js';
 
 const el = (id) => document.getElementById(id);
 // Escape text before inserting via innerHTML — names/addresses come from
@@ -39,7 +39,8 @@ function go(id, fromTab) {
     if (state.origin && !state.origin.fallback) mapView.setUserMarker('homeMap', state.origin.lng, state.origin.lat, false, state.origin.accuracy);
   }
   if (id === 'search') setTimeout(() => el('searchInput')?.focus(), 80);
-  if (id === 'profile') renderStats();
+  if (id === 'settings') syncSettingsUI();
+  if (id === 'profile') { renderStats(); renderProfile(); }
   window.scrollTo(0, 0);
 }
 
@@ -141,6 +142,21 @@ function renderProfile() {
   });
   if (el('profileName')) el('profileName').textContent = state.user?.name || 'You';
   if (el('profileEmail')) el('profileEmail').textContent = state.user?.email || '';
+
+  // Once the user has rated, swap the "Rate" row for a "Share" action.
+  const rateRow = el('rateRow');
+  if (rateRow) {
+    let rated = null;
+    try { rated = localStorage.getItem('aoc_rated'); } catch { /* private mode */ }
+    if (rated) {
+      const stars = '★'.repeat(Math.max(1, Math.min(5, +rated)));
+      rateRow.dataset.act = 'shareApp';
+      rateRow.innerHTML = `<div class="s-ic"><svg><use href="#i-nav"/></svg></div><div class="s-body"><div class="t">Share ArriveO'Clock</div><div class="d">Thanks for rating ${stars}</div></div><svg class="chev"><use href="#i-chevron"/></svg>`;
+    } else {
+      rateRow.dataset.act = 'go:review';
+      rateRow.innerHTML = `<div class="s-ic"><svg><use href="#i-star"/></svg></div><div class="s-body"><div class="t">Rate ArriveO'Clock</div></div><svg class="chev"><use href="#i-chevron"/></svg>`;
+    }
+  }
 }
 
 // Real trip stats from the journey history.
@@ -619,10 +635,12 @@ let rating = 0;
 function submitReview() {
   if (!rating) { toast('Tap the stars to rate'); return; }
   db.submitReview({ rating, comment: el('reviewText')?.value || '' });
+  try { localStorage.setItem('aoc_rated', String(rating)); } catch { /* private mode */ }
   toast('Thanks for the feedback!');
   if (el('reviewText')) el('reviewText').value = '';
   rating = 0;
   document.querySelectorAll('#stars .star').forEach((s) => s.classList.remove('on'));
+  renderProfile(); // swap the "Rate" row → "Share"
   setTimeout(goBack, 600);
 }
 
@@ -761,8 +779,47 @@ const ACTIONS = {
   replayOnboarding: () => replayOnboarding(),
   clearRecents: async () => { await db.clearRecents(); renderRecents(); toast('History cleared'); },
   soundSaved: () => { goBack(); toast('Sound saved'); },
-  toggle: (_a, elm) => elm.classList.toggle('on'),
+  toggleVibrate: (_a, elm) => {
+    state.vibrate = !state.vibrate;
+    elm.classList.toggle('on', state.vibrate);
+    db.updateProfile({ vibrate: state.vibrate });
+    toast(state.vibrate ? 'Vibration on' : 'Vibration off');
+  },
+  openLocationSettings: () => openNativeSettings(),
+  openAppSettings: () => openNativeSettings(),
+  shareApp: () => shareApp(),
 };
+
+// Open the device's settings page for this app (location "Allow all the time",
+// notifications). On web there's nothing to open — point the user at the browser.
+async function openNativeSettings() {
+  if (!isNative) { toast('Manage this in your browser’s site settings'); return; }
+  const ok = await openAppSettings();
+  if (ok) toast('Set Location to “Allow all the time”');
+  else toast('Open ArriveO’Clock in system Settings to adjust permissions');
+}
+
+// Share the app (native share sheet where available, else copy the link).
+async function shareApp() {
+  const url = 'https://arriveoclock.vercel.app';
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: "ArriveO'Clock", text: 'Sleep on the metro — this wakes you right before your stop.', url });
+      return;
+    }
+  } catch { return; /* user dismissed the share sheet */ }
+  try { await navigator.clipboard.writeText(url); toast('Link copied — share it anywhere'); }
+  catch { toast(url); }
+}
+
+// Reflect persisted settings on the controls that aren't auto-rendered elsewhere.
+function syncSettingsUI() {
+  const vt = el('vibToggle');
+  if (vt) vt.classList.toggle('on', state.vibrate !== false);
+  if (el('soundVal')) el('soundVal').textContent = state.tone || 'Lo-fi';
+  renderLead();
+  renderUnits();
+}
 
 // ===========================================================================
 // Global delegated click handling (for dynamically rendered rows)
@@ -845,6 +902,7 @@ function wireDelegation() {
       state.tone = tone.dataset.tone;
       db.updateProfile({ alarm_tone: state.tone });
       renderTones();
+      if (el('soundVal')) el('soundVal').textContent = state.tone;
       previewTone(state.tone);
       return;
     }
