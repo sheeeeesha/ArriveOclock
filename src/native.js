@@ -8,43 +8,41 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 //   • background location via a foreground-service watcher (keeps tracking when
 //     the screen is off / app backgrounded), feeding the SAME motion-based
 //     alarm engine in alarm.js,
-//   • a local notification that fires the alarm even when backgrounded.
+//   • a NATIVE full-screen alarm (custom "Alarm" plugin) that fires via
+//     AlarmManager and rings on the ALARM stream over the lock screen — even if
+//     the app is killed or the phone is in Doze. A plain notification can't do
+//     that (it plays on the notification stream and can't go full-screen).
 // ---------------------------------------------------------------------------
 
 export const isNative = Capacitor.isNativePlatform();
 
-let BG = null; // @capacitor-community/background-geolocation
-let LN = null; // @capacitor/local-notifications
+let BG = null;    // @capacitor-community/background-geolocation
+let LN = null;    // @capacitor/local-notifications (used only to request notif permission)
+let ALARM = null; // our native Alarm plugin (see android .../AlarmPlugin.java)
 let watcherId = null;
 
-async function ensure() {
-  if (!isNative) return false;
-  if (!BG) BG = registerPlugin('BackgroundGeolocation');
+// Notification permission is needed (Android 13+) both for the foreground-service
+// tracking notification and for the alarm's full-screen-intent notification.
+async function ensureNotifPermission() {
+  if (!isNative) return;
   if (!LN) {
-    const mod = await import('@capacitor/local-notifications');
-    LN = mod.LocalNotifications;
-    try { await LN.requestPermissions(); } catch { /* ignore */ }
-    try {
-      if (LN.createChannel) {
-        await LN.createChannel({
-          id: 'alarm',
-          name: 'Arrival alarm',
-          description: 'Wakes you near your stop',
-          importance: 5,        // MAX — heads-up + sound even when locked
-          visibility: 1,        // PUBLIC — show full alarm on the lock screen
-          sound: 'alarm.wav',   // loud tone from res/raw, not the default chime
-          vibration: true,
-        });
-      }
-    } catch { /* ignore */ }
+    try { const mod = await import('@capacitor/local-notifications'); LN = mod.LocalNotifications; }
+    catch { return; }
   }
-  return true;
+  try { await LN.requestPermissions(); } catch { /* ignore */ }
+}
+
+function alarmPlugin() {
+  if (!ALARM) ALARM = registerPlugin('Alarm');
+  return ALARM;
 }
 
 // Start continuous background tracking. onLoc receives { lng, lat, speed, ts }
 // on every fix — even with the screen off — via the plugin's foreground service.
 export async function startBackgroundTracking(onLoc) {
-  if (!(await ensure())) return;
+  if (!isNative) return;
+  if (!BG) BG = registerPlugin('BackgroundGeolocation');
+  await ensureNotifPermission();
   await stopBackgroundTracking();
   try {
     watcherId = await BG.addWatcher(
@@ -87,52 +85,27 @@ export async function stopBackgroundTracking() {
   }
 }
 
-// Fire a local notification NOW — shows + sounds even when backgrounded.
+// Ring the native full-screen alarm NOW (rings even when backgrounded; the
+// AlarmActivity launches over the app and plays on the alarm stream).
 export async function fireNativeAlarm(title, body) {
-  if (!(await ensure())) return;
-  try {
-    await cancelBackupAlarm();        // we're ringing live; drop the scheduled backup
-    await LN.schedule({
-      notifications: [{
-        id: Math.floor(Date.now() % 100000),
-        title,
-        body,
-        channelId: 'alarm',
-        sound: 'alarm.wav',           // pre-Android-O fallback; O+ uses the channel sound
-        schedule: { at: new Date(Date.now() + 250), allowWhileIdle: true },
-      }],
-    });
-  } catch { /* ignore */ }
+  if (!isNative) return;
+  await ensureNotifPermission();
+  try { alarmPlugin().set({ at: Date.now(), title, body }); } catch { /* ignore */ }
 }
 
-// Fixed id so re-scheduling REPLACES the pending backup instead of stacking.
-const BACKUP_ID = 424242;
-
-// Schedule an OS-level alarm for the predicted arrival time. This is the
-// reliability backstop: AlarmManager (allowWhileIdle) delivers it even if the
-// WebView/JS is frozen, the app is killed, or the phone is in Doze — the exact
-// situations where the live, fix-driven fire() can't run. The live engine
-// reschedules this as GPS refines the ETA, and cancels it when it rings live.
+// Schedule the native full-screen alarm for the predicted arrival time. This is
+// the reliability backstop: AlarmManager (setAlarmClock) delivers it even if the
+// WebView/JS is frozen, the app is killed, or the phone is in Doze — exactly when
+// the live, fix-driven fire() can't run. The live engine reschedules this as GPS
+// refines the ETA, and cancels it when it rings live.
 export async function scheduleBackupAlarm(whenMs, title, body) {
-  if (!(await ensure())) return;
-  // Already due (e.g. a stop closer than the lead time) → just ring now.
-  if (whenMs <= Date.now() + 1500) { await fireNativeAlarm(title, body); return; }
-  try {
-    await cancelBackupAlarm();
-    await LN.schedule({
-      notifications: [{
-        id: BACKUP_ID,
-        title,
-        body,
-        channelId: 'alarm',
-        sound: 'alarm.wav',
-        schedule: { at: new Date(whenMs), allowWhileIdle: true },
-      }],
-    });
-  } catch { /* ignore */ }
+  if (!isNative) return;
+  await ensureNotifPermission();
+  try { alarmPlugin().set({ at: whenMs, title, body }); } catch { /* ignore */ }
 }
 
+// Cancel the pending alarm AND stop any active ringing.
 export async function cancelBackupAlarm() {
-  if (!LN) return;
-  try { await LN.cancel({ notifications: [{ id: BACKUP_ID }] }); } catch { /* ignore */ }
+  if (!isNative) return;
+  try { alarmPlugin().cancel(); } catch { /* ignore */ }
 }

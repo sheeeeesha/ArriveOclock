@@ -116,14 +116,18 @@ function fire() {
   stopWatch();
   el('alarmDest').textContent = state.dest?.name || 'your stop';
   el('alarmRing').classList.add('show');
-  if (state.vibrate && navigator.vibrate) navigator.vibrate([500, 250, 500, 250, 500]);
-  playTone(state.tone);
   const body = `You arrive at ${state.dest?.name || 'your stop'} in about ${state.leadTimeMin} min.`;
   if (isNative) {
-    // Works even when backgrounded / screen off.
+    // The native full-screen alarm rings on the ALARM stream and shows over the
+    // lock screen (works locked / backgrounded). Don't also play the WebView
+    // tone or vibrate here — the native alarm owns audio + vibration.
     fireNativeAlarm('Almost there', body);
-  } else if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('Almost there', { body });
+  } else {
+    if (state.vibrate && navigator.vibrate) navigator.vibrate([500, 250, 500, 250, 500]);
+    playTone(state.tone);
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Almost there', { body });
+    }
   }
   if (state.journeyId) updateJourney(state.journeyId, { alarm_fired: true });
 }
