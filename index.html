@@ -675,10 +675,12 @@ input { font: inherit; }
 
 /* Review screen stars */
 .stars { display: flex; gap: var(--s-2); justify-content: center; padding: var(--s-5) 0; }
-.star { width: 42px; height: 42px; }
-.star svg { width: 100%; height: 100%; }
-.star .ic { stroke: var(--line-strong); }
-.star.on .ic { fill: var(--text); stroke: var(--text); }
+.star { width: 42px; height: 42px; padding: 4px; }
+.star svg { width: 100%; height: 100%; display: block; }
+/* Inline path (NOT <use>) so the on/off fill isn't blocked by the <use>
+   shadow boundary — descendant selectors like `.star.on .ic` don't cross it. */
+.star svg path { fill: none; stroke: var(--line-strong); stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; transition: fill var(--dur-1), stroke var(--dur-1); }
+.star.on svg path { fill: var(--text); stroke: var(--text); }
 .field { width: 100%; min-height: 120px; resize: none; padding: var(--s-4); border: 1px solid var(--line); border-radius: var(--r-3); background: var(--surface); color: var(--text); font-size: var(--t-base); outline: none; transition: border-color var(--dur-1); }
 .field:focus { border-color: var(--text); }
 
@@ -1285,11 +1287,11 @@ input { font: inherit; }
     <div class="view-scroll" style="padding:0 var(--s-4)">
       <p style="text-align:center;color:var(--text-2);margin-top:var(--s-5)">How was your experience?</p>
       <div class="stars" id="stars">
-        <button class="star" data-v="1"><svg><use href="#i-star"/></svg></button>
-        <button class="star" data-v="2"><svg><use href="#i-star"/></svg></button>
-        <button class="star" data-v="3"><svg><use href="#i-star"/></svg></button>
-        <button class="star" data-v="4"><svg><use href="#i-star"/></svg></button>
-        <button class="star" data-v="5"><svg><use href="#i-star"/></svg></button>
+        <button class="star" data-v="1" aria-label="1 star"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6L20.5 9l-4.5 4 1.3 6L12 16l-5.3 3 1.3-6-4.5-4 5.9-.4z"/></svg></button>
+        <button class="star" data-v="2" aria-label="2 stars"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6L20.5 9l-4.5 4 1.3 6L12 16l-5.3 3 1.3-6-4.5-4 5.9-.4z"/></svg></button>
+        <button class="star" data-v="3" aria-label="3 stars"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6L20.5 9l-4.5 4 1.3 6L12 16l-5.3 3 1.3-6-4.5-4 5.9-.4z"/></svg></button>
+        <button class="star" data-v="4" aria-label="4 stars"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6L20.5 9l-4.5 4 1.3 6L12 16l-5.3 3 1.3-6-4.5-4 5.9-.4z"/></svg></button>
+        <button class="star" data-v="5" aria-label="5 stars"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6L20.5 9l-4.5 4 1.3 6L12 16l-5.3 3 1.3-6-4.5-4 5.9-.4z"/></svg></button>
       </div>
       <textarea class="field" id="reviewText" placeholder="Tell us what worked, or suggest a feature…"></textarea>
       <div style="margin-top:var(--s-4)"><button class="btn-primary" data-act="submitReview">Send feedback</button></div>

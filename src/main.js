@@ -619,8 +619,14 @@ async function finishOnboarding() {
   if (DEMO || state.user) locateOnHome();
 }
 function replayOnboarding() {
+  // Hide whatever view is showing (e.g. Settings) — otherwise it stays painted
+  // on top of onboarding since both are .view.full at the same z-index.
+  document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+  el('tabbar').style.display = 'none'; // onboarding is immersive
   obGo(0);
   el('onboarding').classList.add('active');
+  state.navStack = [];
+  window.scrollTo(0, 0);
 }
 
 function setTheme(t) {
