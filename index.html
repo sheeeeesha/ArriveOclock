@@ -741,8 +741,12 @@ input { font: inherit; }
    Landing page (web only). Full-bleed marketing page that lives OUTSIDE
    the app phone-frame. Shown once before entering the app; never native.
    ===================================================================== */
-#landingPage { position: fixed; inset: 0; z-index: 300; display: none; overflow-y: auto; overflow-x: hidden; background: var(--bg); color: var(--text); scroll-behavior: smooth; }
+#landingPage { display: none; background: var(--bg); color: var(--text); }
 #landingPage.show { display: block; }
+/* On web the landing IS the page: let the window scroll, hide the app shell. */
+html.lp-mode, html.lp-mode body { height: auto; min-height: 100%; overflow-x: hidden; }
+html.lp-mode body { overflow-y: visible; }
+html.lp-mode .stage { display: none !important; }
 .lp-wrap { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 48px); }
 #landingPage a { color: inherit; text-decoration: none; }
 
@@ -758,15 +762,27 @@ input { font: inherit; }
 .lp-btn.ghost .ic { stroke: var(--text); }
 .lp-nav .lp-btn { height: 42px; padding: 0 18px; font-size: 14px; }
 
-.lp-hero { padding: clamp(44px, 8vw, 104px) 0 clamp(40px, 6vw, 80px); }
+.lp-btn-lg { height: 56px; padding: 0 30px; font-size: 16px; }
+
+/* Scroll progress bar */
+.lp-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: var(--text); transform: scaleX(0); transform-origin: 0 50%; z-index: 60; }
+
+/* Hero */
+.lp-hero { position: relative; overflow: hidden; padding: clamp(52px, 8vw, 116px) 0 clamp(56px, 7vw, 96px); }
+.lp-hero-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.lp-hero-clock { position: absolute; right: -7%; top: 4%; width: min(48vw, 580px); opacity: .07; }
+.lp-grid { position: absolute; inset: 0; background-image: radial-gradient(var(--line-strong) 1px, transparent 1.4px); background-size: 30px 30px; opacity: .45; mask-image: linear-gradient(to bottom, #000, transparent 80%); -webkit-mask-image: linear-gradient(to bottom, #000, transparent 80%); }
+.lp-hero .lp-wrap { position: relative; z-index: 1; }
 .lp-hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
 .lp-kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--text-2); margin-bottom: 24px; border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; }
 .lp-kicker .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--text); animation: gpsPulse 1.8s var(--ease) infinite; }
-.lp-h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.25rem, 5.4vw, 4.3rem); line-height: 1.02; letter-spacing: -.035em; margin: 0 0 22px; }
-.lp-sub { font-size: clamp(1.02rem, 1.5vw, 1.24rem); line-height: 1.5; color: var(--text-2); max-width: 32ch; margin: 0 0 32px; }
+.lp-h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.3rem, 5.6vw, 4.6rem); line-height: 1.0; letter-spacing: -.038em; margin: 0 0 22px; }
+.lp-sub { font-size: clamp(1.02rem, 1.5vw, 1.26rem); line-height: 1.5; color: var(--text-2); max-width: 33ch; margin: 0 0 32px; }
 .lp-actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
-.lp-actions .lp-btn { height: 54px; padding: 0 28px; font-size: 16px; }
 .lp-fine { font-size: 13px; color: var(--text-3); margin-top: 18px; }
+.lp-scrollcue { position: absolute; bottom: 16px; left: 50%; translate: -50% 0; width: 26px; height: 42px; border: 2px solid var(--line-strong); border-radius: 14px; display: grid; justify-items: center; padding-top: 7px; opacity: .55; z-index: 1; }
+.lp-scrollcue span { width: 4px; height: 8px; border-radius: 2px; background: var(--text); animation: lpCue 1.5s var(--ease) infinite; }
+@keyframes lpCue { 0% { transform: translateY(0); opacity: 1; } 70% { transform: translateY(13px); opacity: 0; } 100% { opacity: 0; } }
 
 /* Hero phone mock */
 .lp-phonewrap { justify-self: center; }
@@ -779,51 +795,77 @@ input { font: inherit; }
 .lp-screen .sm { font-size: 13px; color: var(--text-2); }
 .lp-screen .pill { margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--accent-text); background: var(--accent); border-radius: 999px; padding: 8px 16px; }
 
+/* Marquee */
+.lp-marquee { border-block: 1px solid var(--line); padding: 16px 0; overflow: hidden; white-space: nowrap; }
+.lp-marquee-track { display: inline-flex; align-items: center; gap: 26px; will-change: transform; }
+.lp-marquee-track span { font-family: var(--font-display); font-weight: 700; font-size: clamp(20px, 3vw, 34px); letter-spacing: .02em; }
+.lp-marquee-track i { color: var(--text-3); font-style: normal; }
+
+/* Journey — pinned horizontal route */
+.lp-journey { position: relative; }
+.lp-journey-pin { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: clamp(48px, 7vw, 80px) 0; }
+.lp-route { width: min(960px, 92%); height: auto; margin: clamp(18px, 3vw, 34px) 0 clamp(28px, 4vw, 48px); overflow: visible; }
+.lp-route-dot { fill: var(--surface); stroke: var(--text); stroke-width: 3; }
+.lp-journey-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(18px, 3vw, 40px); width: min(960px, 92%); }
+.lp-jstep { padding-top: 18px; border-top: 1px solid var(--line-strong); }
+.lp-jstep .n { font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .12em; color: var(--text-3); }
+.lp-jstep h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.18rem; letter-spacing: -.02em; margin: 10px 0 6px; }
+.lp-jstep p { color: var(--text-2); font-size: .95rem; line-height: 1.5; margin: 0; }
+
 /* Sections */
-.lp-section { padding: clamp(44px, 6vw, 84px) 0; border-top: 1px solid var(--line); }
+.lp-section { padding: clamp(56px, 7vw, 100px) 0; border-top: 1px solid var(--line); }
 .lp-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--text-3); text-align: center; margin-bottom: 14px; }
-.lp-h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.7rem, 3.4vw, 2.6rem); letter-spacing: -.03em; text-align: center; margin: 0 auto 48px; max-width: 18ch; line-height: 1.08; }
+.lp-h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.7rem, 3.6vw, 2.7rem); letter-spacing: -.03em; text-align: center; margin: 0 auto 48px; max-width: 18ch; line-height: 1.08; }
 .lp-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2vw, 24px); }
-.lp-card { border: 1px solid var(--line); border-radius: 22px; padding: clamp(22px, 2.4vw, 30px); background: var(--surface); }
-.lp-card .ci { width: 48px; height: 48px; border-radius: 14px; border: 1px solid var(--line); display: grid; place-items: center; margin-bottom: 18px; }
+.lp-card { border: 1px solid var(--line); border-radius: 22px; padding: clamp(22px, 2.4vw, 32px); background: var(--surface); transition: transform .28s var(--ease), border-color .28s, box-shadow .28s; }
+.lp-card:hover { transform: translateY(-5px); border-color: var(--line-strong); box-shadow: 0 24px 60px rgba(0,0,0,.10); }
+.lp-card .ci { width: 50px; height: 50px; border-radius: 14px; border: 1px solid var(--line); display: grid; place-items: center; margin-bottom: 18px; }
 .lp-card .ci svg { width: 24px; height: 24px; }
-.lp-card h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; letter-spacing: -.02em; margin: 0 0 8px; }
+.lp-card h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.22rem; letter-spacing: -.02em; margin: 0 0 8px; }
 .lp-card p { color: var(--text-2); font-size: .96rem; line-height: 1.5; margin: 0; }
 
-.lp-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 3vw, 40px); counter-reset: step; }
-.lp-step { position: relative; }
-.lp-step .n { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--text-3); letter-spacing: .1em; margin-bottom: 14px; }
-.lp-step h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.22rem; letter-spacing: -.02em; margin: 0 0 8px; }
-.lp-step p { color: var(--text-2); font-size: .96rem; line-height: 1.5; margin: 0; }
-.lp-step::before { content: ""; display: block; height: 1px; background: var(--line-strong); margin-bottom: 22px; }
+/* Pinned statement */
+.lp-statement { min-height: 100vh; display: grid; place-items: center; border-top: 1px solid var(--line); overflow: hidden; padding: 40px 20px; }
+.lp-statement-text { font-family: var(--font-display); font-weight: 700; text-align: center; font-size: clamp(2.4rem, 9vw, 8rem); line-height: .96; letter-spacing: -.045em; }
 
-.lp-final { text-align: center; padding: clamp(56px, 8vw, 110px) 0; border-top: 1px solid var(--line); }
-.lp-final .lp-h2 { margin-bottom: 16px; }
-.lp-final p { color: var(--text-2); max-width: 40ch; margin: 0 auto 32px; font-size: 1.05rem; }
+/* Stats */
+.lp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(18px, 3vw, 32px); text-align: center; }
+.lp-stat-num { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.6rem, 7vw, 5rem); letter-spacing: -.03em; line-height: 1; }
+.lp-stat-l { color: var(--text-2); font-size: .95rem; margin-top: 10px; }
 
+/* Join / waitlist */
+.lp-join { text-align: center; padding: clamp(64px, 9vw, 132px) 0; border-top: 1px solid var(--line); }
+.lp-join-sub { color: var(--text-2); max-width: 46ch; margin: 0 auto 30px; font-size: 1.06rem; line-height: 1.55; }
+.lp-form { display: flex; gap: 10px; justify-content: center; max-width: 540px; margin: 0 auto; flex-wrap: wrap; }
+.lp-form input { flex: 1; min-width: 230px; height: 56px; padding: 0 22px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 16px; outline: none; transition: border-color .15s; }
+.lp-form input:focus { border-color: var(--text); }
+.lp-done { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; padding: 16px 24px; border: 1px solid var(--line); border-radius: 16px; display: inline-block; }
+
+/* Footer */
 .lp-footer { border-top: 1px solid var(--line); padding: 28px 0 40px; }
 .lp-footer .lp-wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: var(--text-3); font-size: 13px; }
 .lp-footer .lp-brand { font-size: 15px; color: var(--text-2); }
 .lp-footer .lp-brand svg { width: 22px; height: 22px; }
 
-/* Entrance */
-.lp-reveal { opacity: 0; transform: translateY(18px); animation: lpUp .7s var(--ease) forwards; }
-.lp-reveal.d1 { animation-delay: .07s } .lp-reveal.d2 { animation-delay: .14s } .lp-reveal.d3 { animation-delay: .21s }
-@keyframes lpUp { to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .lp-reveal { animation: none; opacity: 1; transform: none; } }
+/* Scroll reveals (class added by JS, so content is never hidden without JS). */
+.lp-anim { opacity: 0; transform: translateY(30px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+.lp-anim.lp-in { opacity: 1; transform: none; }
 
+@media (prefers-reduced-motion: reduce) {
+  .lp-scrollcue span, .lp-kicker .dot { animation: none; }
+  .lp-anim { opacity: 1; transform: none; transition: none; }
+}
 @media (max-width: 860px) {
-  .lp-hero-grid { grid-template-columns: 1fr; gap: clamp(36px, 8vw, 56px); }
-  .lp-hero { text-align: center; }
-  .lp-sub { margin-left: auto; margin-right: auto; }
+  .lp-hero-grid { grid-template-columns: 1fr; gap: clamp(34px, 8vw, 54px); text-align: center; }
+  .lp-hero-copy .lp-sub { margin-left: auto; margin-right: auto; }
   .lp-actions { justify-content: center; }
   .lp-phonewrap { order: -1; }
-  .lp-features, .lp-steps { grid-template-columns: 1fr; }
-  .lp-step::before { display: none; }
+  .lp-features, .lp-journey-steps, .lp-stats { grid-template-columns: 1fr; }
+  .lp-hero-clock { opacity: .05; }
+  .lp-scrollcue { display: none; }
 }
 @media (max-width: 460px) {
-  .lp-nav .lp-btn span { display: none; }
-  .lp-nav .lp-btn { padding: 0 12px; }
+  .lp-nav .lp-btn { height: 40px; padding: 0 16px; font-size: 13px; }
 }
 </style>
 </head>
@@ -831,26 +873,39 @@ input { font: inherit; }
 
   <!-- ============================= LANDING (web only) ============================= -->
   <div id="landingPage">
+    <div class="lp-progress" aria-hidden="true"></div>
+
     <nav class="lp-nav">
       <div class="lp-wrap">
         <span class="lp-brand"><svg class="mark" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Arrive<b>O'Clock</b></span>
-        <button class="lp-btn" data-act="enterApp"><span>Open app</span> <svg><use href="#i-go"/></svg></button>
+        <button class="lp-btn" data-lp-scroll><span>Join the waitlist</span></button>
       </div>
     </nav>
 
     <header class="lp-hero">
+      <div class="lp-hero-bg" aria-hidden="true">
+        <svg class="lp-hero-clock" viewBox="0 0 400 400">
+          <circle cx="200" cy="200" r="188" fill="none" stroke="var(--line)" stroke-width="2"/>
+          <circle cx="200" cy="200" r="150" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+          <g class="lp-ticks"></g>
+          <line class="lp-hand-h" x1="200" y1="200" x2="200" y2="118" stroke="var(--text)" stroke-width="6" stroke-linecap="round"/>
+          <line class="lp-hand-m" x1="200" y1="200" x2="284" y2="200" stroke="var(--text)" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="200" cy="200" r="8" fill="var(--text)"/>
+        </svg>
+        <div class="lp-grid"></div>
+      </div>
       <div class="lp-wrap lp-hero-grid">
-        <div>
-          <span class="lp-kicker lp-reveal"><span class="dot"></span> Live-ETA arrival alarm</span>
-          <h1 class="lp-h1 lp-reveal d1">Sleep on the metro.<br>We'll wake you at your stop.</h1>
-          <p class="lp-sub lp-reveal d2">ArriveO'Clock tracks your real movement and rings a few minutes before you arrive — no fixed timers, no guesswork. Free, and works in any city.</p>
-          <div class="lp-actions lp-reveal d3">
-            <button class="lp-btn" data-act="enterApp">Open ArriveO'Clock <svg><use href="#i-go"/></svg></button>
-            <a class="lp-btn ghost" href="#lp-how">See how it works</a>
+        <div class="lp-hero-copy">
+          <span class="lp-kicker"><span class="dot"></span> Live-ETA arrival alarm</span>
+          <h1 class="lp-h1">Sleep on the metro. We'll wake you at your stop.</h1>
+          <p class="lp-sub">A travel alarm that tracks your real movement and rings minutes before you arrive — not on a fixed timer. Free, worldwide.</p>
+          <div class="lp-actions">
+            <button class="lp-btn lp-btn-lg" data-lp-scroll>Join the waitlist <svg><use href="#i-go"/></svg></button>
+            <a class="lp-btn ghost lp-btn-lg" href="#lp-journey-anchor">See how it works</a>
           </div>
-          <p class="lp-fine lp-reveal d3">No sign-up needed · your location stays on your device.</p>
+          <p class="lp-fine">Android app launching soon · locked-screen alarms.</p>
         </div>
-        <div class="lp-phonewrap lp-reveal d2">
+        <div class="lp-phonewrap">
           <div class="lp-phone"><div class="lp-screen">
             <svg class="mk" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
             <div class="st">Arriving soon</div>
@@ -860,7 +915,38 @@ input { font: inherit; }
           </div></div>
         </div>
       </div>
+      <div class="lp-scrollcue" aria-hidden="true"><span></span></div>
     </header>
+
+    <div class="lp-marquee" aria-hidden="true">
+      <div class="lp-marquee-track">
+        <span>METRO</span><i>✦</i><span>BUS</span><i>✦</i><span>TRAIN</span><i>✦</i><span>TRAM</span><i>✦</i><span>FERRY</span><i>✦</i><span>SUBWAY</span><i>✦</i>
+        <span>METRO</span><i>✦</i><span>BUS</span><i>✦</i><span>TRAIN</span><i>✦</i><span>TRAM</span><i>✦</i><span>FERRY</span><i>✦</i><span>SUBWAY</span><i>✦</i>
+      </div>
+    </div>
+
+    <span id="lp-journey-anchor"></span>
+    <section class="lp-journey">
+      <div class="lp-journey-pin">
+        <div class="lp-wrap">
+          <div class="lp-eyebrow">How it works</div>
+          <h2 class="lp-h2">Three taps, then doze off.</h2>
+          <svg class="lp-route" viewBox="0 0 1000 240" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path class="lp-route-halo" d="M40 120 C 230 10, 360 230, 520 120 S 820 10, 960 120" fill="none" stroke="var(--line)" stroke-width="14" stroke-linecap="round"/>
+            <path id="lp-route-line" d="M40 120 C 230 10, 360 230, 520 120 S 820 10, 960 120" fill="none" stroke="var(--text)" stroke-width="3.5" stroke-linecap="round"/>
+            <circle class="lp-route-dot" cx="40" cy="120" r="7"/>
+            <circle class="lp-route-dot" cx="520" cy="120" r="7"/>
+            <circle class="lp-route-dot" cx="960" cy="120" r="7"/>
+            <g id="lp-route-pin"><path d="M0 0s9-7.8 9-15A9 9 0 1 0-9-15C-9-7.8 0 0 0 0z" transform="translate(0 -2)" fill="var(--text)"/><circle cx="0" cy="-17" r="5.4" fill="var(--surface)"/></g>
+          </svg>
+          <div class="lp-journey-steps">
+            <div class="lp-jstep"><span class="n">01</span><h3>Set your stop</h3><p>Search a destination, tap a saved place, or drop a pin on the map.</p></div>
+            <div class="lp-jstep"><span class="n">02</span><h3>Pick your lead time</h3><p>Choose how many minutes before arrival to wake you, plus a tone.</p></div>
+            <div class="lp-jstep"><span class="n">03</span><h3>Relax</h3><p>We track your movement and ring just before your stop. That's it.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <section class="lp-section">
       <div class="lp-wrap">
@@ -869,28 +955,35 @@ input { font: inherit; }
         <div class="lp-features">
           <div class="lp-card"><div class="ci"><svg><use href="#i-bolt"/></svg></div><h3>Timed off live ETA</h3><p>Traffic, slow trains, long stops — the alarm shifts with you and rings just before you actually arrive.</p></div>
           <div class="lp-card"><div class="ci"><svg><use href="#i-globe"/></svg></div><h3>Works anywhere, free</h3><p>Any city, any bus, metro or train. No API keys, no subscription — and it keeps working offline.</p></div>
-          <div class="lp-card"><div class="ci"><svg><use href="#i-bell"/></svg></div><h3>Rings even when locked</h3><p>The mobile app wakes you with a full-screen alarm over the lock screen — pocket your phone and relax.</p></div>
+          <div class="lp-card"><div class="ci"><svg><use href="#i-bell"/></svg></div><h3>Rings even when locked</h3><p>The Android app wakes you with a full-screen alarm over the lock screen — pocket your phone and relax.</p></div>
         </div>
       </div>
     </section>
 
-    <section class="lp-section" id="lp-how">
+    <section class="lp-statement">
+      <div class="lp-statement-text">WAKE&nbsp;UP AT&nbsp;THE RIGHT&nbsp;STOP.</div>
+    </section>
+
+    <section class="lp-section lp-stats-sec">
       <div class="lp-wrap">
-        <div class="lp-eyebrow">How it works</div>
-        <h2 class="lp-h2">Set it once. Doze off.</h2>
-        <div class="lp-steps">
-          <div class="lp-step"><div class="n">01</div><h3>Set your stop</h3><p>Search your destination, pick a saved place, or drop a pin on the map.</p></div>
-          <div class="lp-step"><div class="n">02</div><h3>Pick your lead time</h3><p>Choose how many minutes before arrival to wake you, plus an alarm tone.</p></div>
-          <div class="lp-step"><div class="n">03</div><h3>Relax</h3><p>We track your movement and ring just before your stop. That's it.</p></div>
+        <div class="lp-stats">
+          <div class="lp-stat"><div class="lp-stat-num" data-count="195">195</div><div class="lp-stat-l">countries it works in</div></div>
+          <div class="lp-stat"><div class="lp-stat-num" data-count="100" data-suffix="%">100%</div><div class="lp-stat-l">free, forever</div></div>
+          <div class="lp-stat"><div class="lp-stat-num" data-count="0">0</div><div class="lp-stat-l">fixed timers used</div></div>
         </div>
       </div>
     </section>
 
-    <section class="lp-final">
+    <section class="lp-join" id="lp-join">
       <div class="lp-wrap">
-        <h2 class="lp-h2">Never miss your stop again.</h2>
-        <p>Open ArriveO'Clock in your browser now — and grab the Android app for locked-screen alarms, coming soon.</p>
-        <button class="lp-btn" data-act="enterApp">Open ArriveO'Clock <svg><use href="#i-go"/></svg></button>
+        <div class="lp-eyebrow">Early access</div>
+        <h2 class="lp-h2">The Android app is coming.</h2>
+        <p class="lp-join-sub">Locked-screen alarms land first on Android. Drop your email and we'll tell you the moment it's live.</p>
+        <form class="lp-form" id="lpForm" novalidate>
+          <input type="email" id="lpEmail" placeholder="you@email.com" autocomplete="email" aria-label="Email address">
+          <button type="submit" class="lp-btn lp-btn-lg">Join the waitlist <svg><use href="#i-go"/></svg></button>
+        </form>
+        <p class="lp-fine">No spam — just one email at launch.</p>
       </div>
     </section>
 
