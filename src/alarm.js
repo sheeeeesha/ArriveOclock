@@ -42,6 +42,7 @@ let watchStop = null; // active continuous-watch unsubscribe (near destination)
 let watching = false;
 let backupFireMs = null; // when the OS-scheduled backstop alarm is currently set for
 let tripStartMs = 0;     // when the current journey began
+let leadMin = 5;         // EFFECTIVE lead minutes (capped for short trips — see begin)
 const START_GRACE_MS = 15000; // never ring within the first 15s of a trip (avoids a
                               // premature alarm the instant you start a short trip)
 
@@ -53,14 +54,14 @@ const el = (id) => document.getElementById(id);
 // Re-schedules only when the predicted time shifts > 20 s, to avoid churn.
 function refreshBackup() {
   if (!isNative || fired || measuredEtaMin == null) return;
-  const predicted = Date.now() + Math.max(0, (measuredEtaMin - state.leadTimeMin) * 60000);
+  const predicted = Date.now() + Math.max(0, (measuredEtaMin - leadMin) * 60000);
   // Never schedule inside the start grace window — otherwise a stop whose planned
   // ETA is already within the lead time would ring the instant the trip starts.
   const whenMs = Math.max(predicted, tripStartMs + START_GRACE_MS);
   if (backupFireMs != null && Math.abs(whenMs - backupFireMs) < 20000) return;
   backupFireMs = whenMs;
   const dest = state.dest?.name || 'your stop';
-  scheduleBackupAlarm(whenMs, 'Almost there', `You're arriving at ${dest} in about ${state.leadTimeMin} min.`);
+  scheduleBackupAlarm(whenMs, 'Almost there', `You're arriving at ${dest} in about ${Math.round(leadMin)} min.`);
 }
 
 function fmtClock(minFromNow) {
@@ -96,7 +97,7 @@ function remainingAlongRoute(pos) {
 function paint() {
   const L = state.live;
   if (!L) return;
-  const lead = state.leadTimeMin;
+  const lead = leadMin;
   const etaMin = displayEtaSec / 60;
   const alarmMin = Math.max(0, Math.round(etaMin - lead));
   el('countMin').textContent = alarmMin;
@@ -134,7 +135,7 @@ function fire() {
     // ring from JS: that races the scheduled one and double-rings (the bug this
     // fixes). This block only reflects the fired state in the in-app UI above.
   } else {
-    const body = `You arrive at ${state.dest?.name || 'your stop'} in about ${state.leadTimeMin} min.`;
+    const body = `You arrive at ${state.dest?.name || 'your stop'} in about ${Math.round(leadMin)} min.`;
     if (state.vibrate && navigator.vibrate) navigator.vibrate([500, 250, 500, 250, 500]);
     playTone(state.tone);
     if ('Notification' in window && Notification.permission === 'granted') {
@@ -154,6 +155,10 @@ export function begin() {
   suffixLen = routeCoords ? buildSuffix(routeCoords) : null;
 
   const totalMin = Math.max(1, Math.round((route.duration_s || 1680) / 60));
+  // Effective lead time: cap to 60% of the trip so a short trip never rings at
+  // the start. A 5-min trip with a 5-min lead would otherwise have ETA <= lead
+  // from the very beginning and fire immediately; capping makes it ring ~40% in.
+  leadMin = Math.min(state.leadTimeMin, Math.max(0.5, totalMin * 0.6));
   const totalKm = +(((route.distance_m || 21000) / 1000).toFixed(1));
   state.live = { totalMin, totalKm, leftMin: totalMin, leftKm: totalKm, speedKmh: Math.round((totalKm / totalMin) * 60) };
   state.routeSummary = route.summary || '';
@@ -209,7 +214,7 @@ function scheduleFix(delaySec) {
 }
 
 function nextDelaySec(etaMin, remainingM) {
-  const lead = state.leadTimeMin;
+  const lead = leadMin;
   if (etaMin - lead <= 1) return 8;
   if (etaMin - lead <= 3) return 15;
   if (remainingM < 1500) return 12;
@@ -223,7 +228,7 @@ function isNear() {
   const L = state.live;
   return (
     (L && L.leftKm != null && L.leftKm < 2) ||
-    (measuredEtaMin != null && measuredEtaMin <= state.leadTimeMin + 3)
+    (measuredEtaMin != null && measuredEtaMin <= leadMin + 3)
   );
 }
 
@@ -259,13 +264,13 @@ function processFix(pos) {
   if (speedMps > 0.4) {
     measuredEtaMin = remainingM / speedMps / 60;
     displayEtaSec = measuredEtaMin * 60; // resync the smooth ticker to truth
-    L.totalMin = Math.max(L.totalMin, measuredEtaMin + state.leadTimeMin);
+    L.totalMin = Math.max(L.totalMin, measuredEtaMin + leadMin);
     refreshBackup(); // re-align the OS backstop with the refined ETA
   }
   lastFix = { lng: pos.lng, lat: pos.lat, t: now };
   paint();
 
-  if (measuredEtaMin - state.leadTimeMin <= 0) fire();
+  if (measuredEtaMin - leadMin <= 0) fire();
 }
 
 // Spaced one-shot fix (battery-friendly), used while far from the destination.
