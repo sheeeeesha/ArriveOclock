@@ -41,6 +41,9 @@ let simulate = false;
 let watchStop = null; // active continuous-watch unsubscribe (near destination)
 let watching = false;
 let backupFireMs = null; // when the OS-scheduled backstop alarm is currently set for
+let tripStartMs = 0;     // when the current journey began
+const START_GRACE_MS = 15000; // never ring within the first 15s of a trip (avoids a
+                              // premature alarm the instant you start a short trip)
 
 const el = (id) => document.getElementById(id);
 
@@ -50,7 +53,10 @@ const el = (id) => document.getElementById(id);
 // Re-schedules only when the predicted time shifts > 20 s, to avoid churn.
 function refreshBackup() {
   if (!isNative || fired || measuredEtaMin == null) return;
-  const whenMs = Date.now() + Math.max(0, (measuredEtaMin - state.leadTimeMin) * 60000);
+  const predicted = Date.now() + Math.max(0, (measuredEtaMin - state.leadTimeMin) * 60000);
+  // Never schedule inside the start grace window — otherwise a stop whose planned
+  // ETA is already within the lead time would ring the instant the trip starts.
+  const whenMs = Math.max(predicted, tripStartMs + START_GRACE_MS);
   if (backupFireMs != null && Math.abs(whenMs - backupFireMs) < 20000) return;
   backupFireMs = whenMs;
   const dest = state.dest?.name || 'your stop';
@@ -111,18 +117,24 @@ function setGpsStatus(text) {
 }
 
 function fire() {
+  if (fired) return;
+  // Suppress any alarm in the opening seconds of a trip — paint()/processFix will
+  // call fire() again once the grace window passes, so a genuinely-near stop still
+  // rings, just not the instant you tap start.
+  if (Date.now() - tripStartMs < START_GRACE_MS) return;
   fired = true;
   clearTimeout(fixTimer);
   stopWatch();
   el('alarmDest').textContent = state.dest?.name || 'your stop';
   el('alarmRing').classList.add('show');
-  const body = `You arrive at ${state.dest?.name || 'your stop'} in about ${state.leadTimeMin} min.`;
   if (isNative) {
-    // The native full-screen alarm rings on the ALARM stream and shows over the
-    // lock screen (works locked / backgrounded). Don't also play the WebView
-    // tone or vibrate here — the native alarm owns audio + vibration.
-    fireNativeAlarm('Almost there', body);
+    // On native the ring comes SOLELY from the OS-scheduled alarm (AlarmManager),
+    // which refreshBackup() keeps aligned to the arrival time — it fires on its
+    // own here, locked or not. We deliberately don't trigger a second native
+    // ring from JS: that races the scheduled one and double-rings (the bug this
+    // fixes). This block only reflects the fired state in the in-app UI above.
   } else {
+    const body = `You arrive at ${state.dest?.name || 'your stop'} in about ${state.leadTimeMin} min.`;
     if (state.vibrate && navigator.vibrate) navigator.vibrate([500, 250, 500, 250, 500]);
     playTone(state.tone);
     if ('Notification' in window && Notification.permission === 'granted') {
@@ -136,6 +148,7 @@ export function begin() {
   stopWatch(); // clear any leftover watch from a prior journey
   fired = false;
   lastFix = null;
+  tripStartMs = Date.now();
   const route = state.routes[state.mode] || {};
   routeCoords = route.coordinates || null;
   suffixLen = routeCoords ? buildSuffix(routeCoords) : null;
