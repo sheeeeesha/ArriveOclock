@@ -1,6 +1,6 @@
 import { state, distFromKm, speedFromKmh } from './state.js';
 import { getCurrentPosition, geolocationAvailable, watchPosition } from './geolocation.js';
-import { isNative, startBackgroundTracking, stopBackgroundTracking, fireNativeAlarm, cancelBackupAlarm } from './native.js';
+import { isNative, platform, startBackgroundTracking, stopBackgroundTracking, fireNativeAlarm, cancelBackupAlarm } from './native.js';
 import { updateUserLocation } from './map.js';
 import { playTone, stopTone } from './sound.js';
 import { updateJourney } from './db.js';
@@ -168,11 +168,11 @@ export function begin() {
     // Native: continuous background tracking keeps the engine alive with the
     // screen off; each fix feeds the same processFix().
     simulate = false;
-    setGpsStatus('Live GPS · background tracking');
+    setGpsStatus(`Background tracking · ${platform}`);
     startBackgroundTracking((loc) => processFix(loc));
   } else {
     simulate = !geolocationAvailable() || (state.origin && state.origin.fallback);
-    setGpsStatus(simulate ? 'Simulated trip (no live GPS)' : 'Live GPS · battery-saver');
+    setGpsStatus(simulate ? `Simulated · ${platform}` : `Foreground only · ${platform}`);
     if (!simulate) scheduleFix(0);
   }
 

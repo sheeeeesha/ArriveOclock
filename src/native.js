@@ -14,7 +14,15 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 //     that (it plays on the notification stream and can't go full-screen).
 // ---------------------------------------------------------------------------
 
-export const isNative = Capacitor.isNativePlatform();
+// Resolve the platform robustly. getPlatform() reads the native bridge global
+// the same way isNativePlatform() does, but also gives us the string ('android'
+// /'ios'/'web') which we surface on the live screen for diagnosis.
+export const platform = (() => {
+  try { if (typeof Capacitor?.getPlatform === 'function') return Capacitor.getPlatform(); } catch { /* ignore */ }
+  try { if (typeof window !== 'undefined' && window.Capacitor?.getPlatform) return window.Capacitor.getPlatform(); } catch { /* ignore */ }
+  return 'web';
+})();
+export const isNative = platform === 'android' || platform === 'ios';
 
 let BG = null;    // @capacitor-community/background-geolocation
 let LN = null;    // @capacitor/local-notifications (used only to request notif permission)

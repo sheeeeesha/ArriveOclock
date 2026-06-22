@@ -479,7 +479,17 @@ document.addEventListener('visibilitychange', () => {
 });
 
 async function startJourney() {
-  const r = state.routes[state.mode];
+  let r = state.routes[state.mode];
+  // Never arm on placeholder values: if the route wasn't computed (or has no
+  // duration), compute it now so begin() gets real distance/duration/geometry
+  // instead of the 28 min / 21 km fallback.
+  if (!r || !(r.duration_s > 0) || !r.coordinates) {
+    await ensureOrigin();
+    try {
+      const fresh = await getRoute(state.origin, state.dest, state.mode);
+      if (fresh) { state.routes[state.mode] = fresh; r = fresh; }
+    } catch { /* begin() still falls back gracefully */ }
+  }
   state.journeyActive = true;
   if (el('ongoingBadge')) el('ongoingBadge').style.display = 'inline-block';
   if (el('liveDest')) el('liveDest').textContent = state.dest?.name || '';
