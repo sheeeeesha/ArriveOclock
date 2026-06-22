@@ -47,8 +47,8 @@ export async function startBackgroundTracking(onLoc) {
   try {
     watcherId = await BG.addWatcher(
       {
-        backgroundTitle: "ArriveO'Clock — trip in progress",
-        backgroundMessage: "Tracking your location so we can wake you near your stop.",
+        backgroundTitle: "ArriveO'Clock — journey in progress",
+        backgroundMessage: "Tracking your stop · tap to open. Stays until you end the trip.",
         requestPermissions: true,
         stale: false,
         distanceFilter: 20,
