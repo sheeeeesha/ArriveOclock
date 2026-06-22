@@ -1,6 +1,6 @@
 import { state, distFromKm, speedFromKmh } from './state.js';
 import { getCurrentPosition, geolocationAvailable, watchPosition } from './geolocation.js';
-import { isNative, startBackgroundTracking, stopBackgroundTracking, fireNativeAlarm, scheduleBackupAlarm, cancelBackupAlarm } from './native.js';
+import { isNative, startBackgroundTracking, stopBackgroundTracking, fireNativeAlarm, cancelBackupAlarm } from './native.js';
 import { updateUserLocation } from './map.js';
 import { playTone, stopTone } from './sound.js';
 import { updateJourney } from './db.js';
@@ -40,29 +40,19 @@ let fired = false;
 let simulate = false;
 let watchStop = null; // active continuous-watch unsubscribe (near destination)
 let watching = false;
-let backupFireMs = null; // when the OS-scheduled backstop alarm is currently set for
 let tripStartMs = 0;     // when the current journey began
 let leadMin = 5;         // EFFECTIVE lead minutes (capped for short trips — see begin)
-const START_GRACE_MS = 15000; // never ring within the first 15s of a trip (avoids a
-                              // premature alarm the instant you start a short trip)
+let hasDeparted = false; // true once we've seen the user OUTSIDE the arrival radius
+
+// Firing is POSITION-based, never a wall-clock countdown: the alarm only fires
+// from a real GPS fix that shows you're actually approaching / at the stop. So a
+// stationary user (no fixes / huge ETA) never triggers it, and it can't ring at
+// the start of a trip when you're still far away.
+const START_GRACE_MS = 15000;  // hard floor: never ring within the first 15s
+const ARRIVAL_RADIUS_M = 150;  // geofence — "physically at the stop"
+const MOVING_MPS = 0.6;        // min speed (~2 km/h) to trust the ETA trigger
 
 const el = (id) => document.getElementById(id);
-
-// Keep an OS-level backstop alarm aligned with the current best ETA. AlarmManager
-// delivers it even if the WebView/JS is frozen or the app is killed (locked phone,
-// Doze) — so the alarm rings regardless of whether the live engine is awake.
-// Re-schedules only when the predicted time shifts > 20 s, to avoid churn.
-function refreshBackup() {
-  if (!isNative || fired || measuredEtaMin == null) return;
-  const predicted = Date.now() + Math.max(0, (measuredEtaMin - leadMin) * 60000);
-  // Never schedule inside the start grace window — otherwise a stop whose planned
-  // ETA is already within the lead time would ring the instant the trip starts.
-  const whenMs = Math.max(predicted, tripStartMs + START_GRACE_MS);
-  if (backupFireMs != null && Math.abs(whenMs - backupFireMs) < 20000) return;
-  backupFireMs = whenMs;
-  const dest = state.dest?.name || 'your stop';
-  scheduleBackupAlarm(whenMs, 'Almost there', `You're arriving at ${dest} in about ${Math.round(leadMin)} min.`);
-}
 
 function fmtClock(minFromNow) {
   const d = new Date(Date.now() + minFromNow * 60000);
@@ -109,8 +99,8 @@ function paint() {
   const denom = Math.max(1, L.totalMin - lead);
   el('ringProg').style.strokeDashoffset = (RING_CIRC * (1 - alarmMin / denom)).toFixed(1);
   el('trackFill').style.width = Math.min(100, Math.max(3, (1 - etaMin / L.totalMin) * 100)) + '%';
-
-  if (etaMin - lead <= 0 && !fired) fire();
+  // NOTE: paint() never fires the alarm — that would be a wall-clock countdown.
+  // Firing is decided in processFix() (real position) or the simulate ticker.
 }
 
 function setGpsStatus(text) {
@@ -128,14 +118,14 @@ function fire() {
   stopWatch();
   el('alarmDest').textContent = state.dest?.name || 'your stop';
   el('alarmRing').classList.add('show');
+  const body = `You're arriving at ${state.dest?.name || 'your stop'}.`;
   if (isNative) {
-    // On native the ring comes SOLELY from the OS-scheduled alarm (AlarmManager),
-    // which refreshBackup() keeps aligned to the arrival time — it fires on its
-    // own here, locked or not. We deliberately don't trigger a second native
-    // ring from JS: that races the scheduled one and double-rings (the bug this
-    // fixes). This block only reflects the fired state in the in-app UI above.
+    // Ring the native full-screen alarm NOW (alarm stream, over the lock screen).
+    // This is reached from a real GPS fix, so on a locked phone the background
+    // foreground-service fix wakes the JS, which fires this. There is no pending
+    // scheduled alarm to also fire, so it rings exactly once.
+    fireNativeAlarm('Almost there', body);
   } else {
-    const body = `You arrive at ${state.dest?.name || 'your stop'} in about ${Math.round(leadMin)} min.`;
     if (state.vibrate && navigator.vibrate) navigator.vibrate([500, 250, 500, 250, 500]);
     playTone(state.tone);
     if ('Notification' in window && Notification.permission === 'granted') {
@@ -149,6 +139,8 @@ export function begin() {
   stopWatch(); // clear any leftover watch from a prior journey
   fired = false;
   lastFix = null;
+  hasDeparted = false;
+  lastRemainingM = null;
   tripStartMs = Date.now();
   const route = state.routes[state.mode] || {};
   routeCoords = route.coordinates || null;
@@ -177,8 +169,6 @@ export function begin() {
     // screen off; each fix feeds the same processFix().
     simulate = false;
     setGpsStatus('Live GPS · background tracking');
-    backupFireMs = null;
-    refreshBackup(); // arm the OS backstop immediately, from the planned ETA
     startBackgroundTracking((loc) => processFix(loc));
   } else {
     simulate = !geolocationAvailable() || (state.origin && state.origin.fallback);
@@ -196,15 +186,20 @@ function startTicker() {
     const L = state.live;
     if (!L || fired) return;
     if (simulate) {
+      // No real GPS: simulate the journey and fire on the simulated countdown.
       L.leftMin = Math.max(0, L.leftMin - 1); // ~1 travel-min per second
       L.leftKm = Math.max(0, L.totalKm * (L.leftMin / L.totalMin));
       L.speedKmh = 36 + Math.round(Math.abs(Math.sin(Date.now() / 2000)) * 16);
       displayEtaSec = L.leftMin * 60;
+      paint();
+      if (displayEtaSec / 60 - leadMin <= 0) fire();
     } else if (speedMps > 0.4) {
-      // Moving: smoothly tick the countdown down between GPS fixes.
+      // Live GPS: only animate the displayed countdown between fixes. Firing is
+      // NOT driven from here — it would ring on wall-clock time even if the user
+      // never moved. The real decision lives in processFix() (position-based).
       displayEtaSec = Math.max(0, displayEtaSec - 1);
+      paint();
     }
-    paint();
   }, 1000);
 }
 
@@ -265,12 +260,20 @@ function processFix(pos) {
     measuredEtaMin = remainingM / speedMps / 60;
     displayEtaSec = measuredEtaMin * 60; // resync the smooth ticker to truth
     L.totalMin = Math.max(L.totalMin, measuredEtaMin + leadMin);
-    refreshBackup(); // re-align the OS backstop with the refined ETA
   }
   lastFix = { lng: pos.lng, lat: pos.lat, t: now };
   paint();
 
-  if (measuredEtaMin - leadMin <= 0) fire();
+  // ---- POSITION-BASED fire decision (never a wall-clock countdown) ----
+  // Direct distance to the stop drives the geofence; along-route remaining ÷
+  // speed drives the lead-time ETA. A stationary or far-away user satisfies
+  // neither, so the alarm can't ring at the start or while waiting in place.
+  const haveDest = state.dest && state.dest.lng != null;
+  const directM = haveDest ? haversine(pos, { lng: state.dest.lng, lat: state.dest.lat }) : Infinity;
+  if (directM > ARRIVAL_RADIUS_M) hasDeparted = true;
+  const approaching = speedMps > MOVING_MPS && measuredEtaMin != null && measuredEtaMin <= leadMin;
+  const arrived = hasDeparted && directM <= ARRIVAL_RADIUS_M;
+  if (haveDest && (approaching || arrived)) fire();
 }
 
 // Spaced one-shot fix (battery-friendly), used while far from the destination.
