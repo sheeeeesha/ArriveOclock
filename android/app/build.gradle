@@ -7,8 +7,8 @@ android {
         applicationId "com.arriveoclock.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "1.0.4"
+        versionCode 6
+        versionName "1.0.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -75,6 +75,39 @@ dependencies {
 }
 
 apply from: 'capacitor.build.gradle'
+
+// ---------------------------------------------------------------------------
+// CI-robust web asset sync. Some pipelines run `npx cap sync` AFTER the Gradle
+// build, so the APK gets packaged with the PREVIOUS build's web assets (stale
+// JS). This guarantees the freshly-built Vite output (repo dist/) is copied
+// into the APK assets immediately before packaging — regardless of when, or
+// whether, cap sync runs.
+def webDistDir = new File(rootProject.projectDir, "../dist")
+def webAssetsDir = new File(projectDir, "src/main/assets/public")
+tasks.register('syncWebAssets') {
+    doLast {
+        if (webDistDir.exists()) {
+            delete webAssetsDir
+            copy {
+                from webDistDir
+                into webAssetsDir
+            }
+            println "syncWebAssets: copied ${webDistDir} -> ${webAssetsDir}"
+        } else {
+            println "syncWebAssets: ${webDistDir} not found — leaving existing assets in place"
+        }
+        // Also keep the Capacitor runtime config fresh (so useLegacyBridge etc.
+        // ship even if cap sync ran before/after at the wrong time).
+        def cfgSrc = new File(rootProject.projectDir, "../capacitor.config.json")
+        if (cfgSrc.exists()) {
+            copy {
+                from cfgSrc
+                into new File(projectDir, "src/main/assets")
+            }
+        }
+    }
+}
+tasks.matching { it.name == 'preBuild' }.configureEach { dependsOn 'syncWebAssets' }
 
 try {
     def servicesJSON = file('google-services.json')
