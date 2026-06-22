@@ -168,11 +168,11 @@ export function begin() {
     // Native: continuous background tracking keeps the engine alive with the
     // screen off; each fix feeds the same processFix().
     simulate = false;
-    setGpsStatus(`Background tracking · ${platform}`);
+    setGpsStatus(`Background tracking · ${platform} · ${__BUILD_ID__}`);
     startBackgroundTracking((loc) => processFix(loc));
   } else {
     simulate = !geolocationAvailable() || (state.origin && state.origin.fallback);
-    setGpsStatus(simulate ? `Simulated · ${platform}` : `Foreground only · ${platform}`);
+    setGpsStatus((simulate ? 'Simulated · ' : 'Foreground only · ') + `${platform} · ${__BUILD_ID__}`);
     if (!simulate) scheduleFix(0);
   }
 

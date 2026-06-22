@@ -21,6 +21,8 @@ workflows:
     scripts:
       - name: Install dependencies
         script: npm ci
+      - name: Clean stale build artifacts
+        script: rm -rf dist node_modules/.vite android/app/src/main/assets/public
       - name: Build web (Vite)
         script: npm run build
       - name: Capacitor sync → Android
@@ -29,7 +31,7 @@ workflows:
         script: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleDebug
+          ./gradlew clean assembleDebug
     artifacts:
       - android/app/build/outputs/**/*.apk
     # The built APK appears under "Artifacts" on the build page — download it
@@ -61,6 +63,8 @@ workflows:
     scripts:
       - name: Install dependencies
         script: npm ci
+      - name: Clean stale build artifacts
+        script: rm -rf dist node_modules/.vite android/app/src/main/assets/public
       - name: Build web (Vite)
         script: npm run build
       - name: Capacitor sync → Android
@@ -69,6 +73,7 @@ workflows:
         script: |
           cd android
           chmod +x ./gradlew
+          ./gradlew clean
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$CM_BUILD_DIR/upload.jks"
             ./gradlew bundleRelease \

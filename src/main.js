@@ -951,6 +951,7 @@ function pickSaved(kind) {
 // ===========================================================================
 async function init() {
   logConfig();
+  try { console.log("ArriveO'Clock build", __BUILD_ID__, '· platform', isNative ? 'native' : 'web'); } catch { /* ignore */ }
 
   try { const th = localStorage.getItem('aoc_theme'); if (th) setTheme(th); } catch { /* ignore */ }
 
