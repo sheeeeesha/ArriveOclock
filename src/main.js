@@ -960,20 +960,16 @@ async function init() {
     setTimeout(() => history.replaceState(null, '', location.pathname + location.search), 0);
   }
 
-  // Service worker:
-  //  • NATIVE app → NEVER use one. Its cache lives in the WebView storage and
-  //    SURVIVES APK reinstalls, so it serves STALE JS — new builds end up
-  //    running old code. Actively unregister any existing SW and wipe caches so
-  //    a device that already has the stale SW recovers on next launch.
-  //  • WEB (prod) → register it for offline/installable PWA behaviour.
+  // NO service worker anywhere. It cached assets by filename and served STALE
+  // JS across updates — inside the native WebView its cache even survives APK
+  // reinstalls, so new builds kept running old code. Always unregister any
+  // existing SW and wipe all caches so previously-poisoned installs recover.
   if ('serviceWorker' in navigator) {
-    if (isNative) {
-      navigator.serviceWorker.getRegistrations()
-        .then((regs) => regs.forEach((r) => r.unregister())).catch(() => {});
-      if (window.caches) caches.keys().then((ks) => ks.forEach((k) => caches.delete(k))).catch(() => {});
-    } else if (import.meta.env.PROD) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    }
+    navigator.serviceWorker.getRegistrations()
+      .then((regs) => regs.forEach((r) => r.unregister())).catch(() => {});
+  }
+  if (window.caches) {
+    caches.keys().then((ks) => ks.forEach((k) => caches.delete(k))).catch(() => {});
   }
 
   // UI wiring that doesn't depend on the signed-in user.
