@@ -5,6 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#0a0a0a" />
 <title>ArriveO'Clock</title>
+<script>
+  /* Self-heal stale code: an old build's service worker can keep serving cached
+     JS inside the WebView even after the APK updates. This runs before the
+     bundle — if any SW exists, unregister it, wipe caches, and reload once so
+     the fresh bundled code loads. No-op (and no reload) when none exist. */
+  (function () {
+    try {
+      if (!('serviceWorker' in navigator)) return;
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        if (!regs || !regs.length) return;
+        Promise.all(regs.map(function (r) { return r.unregister(); })).then(function () {
+          if (window.caches && caches.keys) {
+            caches.keys().then(function (ks) {
+              return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+            }).then(function () { location.reload(); });
+          } else { location.reload(); }
+        });
+      }).catch(function () {});
+    } catch (e) {}
+  })();
+</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/favicon.svg">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -1473,7 +1494,7 @@ html.lp-mode .stage { display: none !important; }
           <div class="s-row" data-act="signOut"><div class="s-ic"><svg><use href="#i-shield"/></svg></div><div class="s-body"><div class="t" style="color:var(--text)">Sign out</div></div></div>
         </div>
       </div>
-      <p style="text-align:center;color:var(--text-3);font-size:var(--t-xs);padding:var(--s-5)">ArriveO'Clock · v1.0.5</p>
+      <p style="text-align:center;color:var(--text-3);font-size:var(--t-xs);padding:var(--s-5)">ArriveO'Clock · v1.0.6</p>
     </div>
   </section>
 
