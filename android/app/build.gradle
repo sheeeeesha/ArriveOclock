@@ -7,8 +7,8 @@ android {
         applicationId "com.arriveoclock.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "1.0.3"
+        versionCode 5
+        versionName "1.0.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -17,6 +17,16 @@ android {
         }
     }
     signingConfigs {
+        // FIXED debug key (committed; debug keys aren't secret). Without this,
+        // each CI machine auto-generates a different debug.keystore, so a new
+        // debug APK won't install over an older one ("App not installed" —
+        // signature mismatch) and the device keeps running the OLD build.
+        debug {
+            storeFile file('aoc-debug.keystore')
+            storePassword 'android'
+            keyAlias 'aocdebug'
+            keyPassword 'android'
+        }
         release {
             // Credentials come from env vars / -P gradle properties in CI
             // (see codemagic.yaml). Guarded so local/debug builds without a
@@ -31,6 +41,9 @@ android {
         }
     }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled true
             shrinkResources true
