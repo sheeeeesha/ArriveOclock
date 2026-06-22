@@ -4,4 +4,9 @@
     <string name="title_activity_main">ArriveO\'Clock</string>
     <string name="package_name">com.arriveoclock.app</string>
     <string name="custom_url_scheme">com.arriveoclock.app</string>
+    <!-- Background-geolocation foreground-service notification appearance.
+         A transparent vector icon keeps the notification well-behaved
+         (non-dismissable, taps open the app) so tracking isn't interrupted. -->
+    <string name="capacitor_background_geolocation_notification_channel_name">Trip tracking</string>
+    <string name="capacitor_background_geolocation_notification_icon">drawable/ic_stat_tracking</string>
 </resources>
