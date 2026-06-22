@@ -136,48 +136,54 @@ function fire() {
 }
 
 export function begin() {
-  stopWatch(); // clear any leftover watch from a prior journey
-  fired = false;
-  lastFix = null;
-  hasDeparted = false;
-  lastRemainingM = null;
-  tripStartMs = Date.now();
-  const route = state.routes[state.mode] || {};
-  routeCoords = route.coordinates || null;
-  suffixLen = routeCoords ? buildSuffix(routeCoords) : null;
+  // Wrapped so any error surfaces on the live screen instead of silently
+  // freezing the journey on its placeholder values.
+  try {
+    stopWatch(); // clear any leftover watch from a prior journey
+    fired = false;
+    lastFix = null;
+    hasDeparted = false;
+    tripStartMs = Date.now();
+    const route = state.routes[state.mode] || {};
+    routeCoords = route.coordinates || null;
+    suffixLen = routeCoords ? buildSuffix(routeCoords) : null;
 
-  const totalMin = Math.max(1, Math.round((route.duration_s || 1680) / 60));
-  // Effective lead time: cap to 60% of the trip so a short trip never rings at
-  // the start. A 5-min trip with a 5-min lead would otherwise have ETA <= lead
-  // from the very beginning and fire immediately; capping makes it ring ~40% in.
-  leadMin = Math.min(state.leadTimeMin, Math.max(0.5, totalMin * 0.6));
-  const totalKm = +(((route.distance_m || 21000) / 1000).toFixed(1));
-  state.live = { totalMin, totalKm, leftMin: totalMin, leftKm: totalKm, speedKmh: Math.round((totalKm / totalMin) * 60) };
-  state.routeSummary = route.summary || '';
-  displayEtaSec = totalMin * 60;
-  measuredEtaMin = totalMin;
-  speedMps = (totalKm * 1000) / (totalMin * 60); // planned avg speed until first fix
+    const totalMin = Math.max(1, Math.round((route.duration_s || 1680) / 60));
+    // Effective lead time: cap to 60% of the trip so a short trip never rings at
+    // the start. A 5-min trip with a 5-min lead would otherwise have ETA <= lead
+    // from the very beginning and fire immediately; capping makes it ring ~40% in.
+    leadMin = Math.min(state.leadTimeMin, Math.max(0.5, totalMin * 0.6));
+    const totalKm = +(((route.distance_m || 21000) / 1000).toFixed(1));
+    state.live = { totalMin, totalKm, leftMin: totalMin, leftKm: totalKm, speedKmh: Math.round((totalKm / totalMin) * 60) };
+    state.routeSummary = route.summary || '';
+    displayEtaSec = totalMin * 60;
+    measuredEtaMin = totalMin;
+    speedMps = (totalKm * 1000) / (totalMin * 60); // planned avg speed until first fix
 
-  if (el('liveVia')) el('liveVia').textContent = state.routeSummary || 'On your way';
+    if (el('liveVia')) el('liveVia').textContent = state.routeSummary || 'On your way';
 
-  if ('Notification' in window && Notification.permission === 'default') {
-    try { Notification.requestPermission(); } catch { /* legacy */ }
+    if ('Notification' in window && Notification.permission === 'default') {
+      try { Notification.requestPermission(); } catch { /* legacy */ }
+    }
+
+    if (isNative) {
+      // Native: continuous background tracking keeps the engine alive with the
+      // screen off; each fix feeds the same processFix().
+      simulate = false;
+      setGpsStatus(`Background tracking · ${platform} · ${__BUILD_ID__}`);
+      startBackgroundTracking((loc) => processFix(loc));
+    } else {
+      simulate = !geolocationAvailable() || (state.origin && state.origin.fallback);
+      setGpsStatus((simulate ? 'Simulated · ' : 'Foreground only · ') + `${platform} · ${__BUILD_ID__}`);
+      if (!simulate) scheduleFix(0);
+    }
+
+    paint();
+    startTicker();
+  } catch (err) {
+    setGpsStatus('Alarm init error — ' + ((err && err.message) || err));
+    try { console.error('alarm.begin() failed:', err); } catch { /* ignore */ }
   }
-
-  if (isNative) {
-    // Native: continuous background tracking keeps the engine alive with the
-    // screen off; each fix feeds the same processFix().
-    simulate = false;
-    setGpsStatus(`Background tracking · ${platform} · ${__BUILD_ID__}`);
-    startBackgroundTracking((loc) => processFix(loc));
-  } else {
-    simulate = !geolocationAvailable() || (state.origin && state.origin.fallback);
-    setGpsStatus((simulate ? 'Simulated · ' : 'Foreground only · ') + `${platform} · ${__BUILD_ID__}`);
-    if (!simulate) scheduleFix(0);
-  }
-
-  paint();
-  startTicker();
 }
 
 function startTicker() {
