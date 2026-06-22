@@ -960,10 +960,20 @@ async function init() {
     setTimeout(() => history.replaceState(null, '', location.pathname + location.search), 0);
   }
 
-  // Register the service worker (production builds only — avoids caching the
-  // dev modules during local development).
-  if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  // Service worker:
+  //  • NATIVE app → NEVER use one. Its cache lives in the WebView storage and
+  //    SURVIVES APK reinstalls, so it serves STALE JS — new builds end up
+  //    running old code. Actively unregister any existing SW and wipe caches so
+  //    a device that already has the stale SW recovers on next launch.
+  //  • WEB (prod) → register it for offline/installable PWA behaviour.
+  if ('serviceWorker' in navigator) {
+    if (isNative) {
+      navigator.serviceWorker.getRegistrations()
+        .then((regs) => regs.forEach((r) => r.unregister())).catch(() => {});
+      if (window.caches) caches.keys().then((ks) => ks.forEach((k) => caches.delete(k))).catch(() => {});
+    } else if (import.meta.env.PROD) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
   }
 
   // UI wiring that doesn't depend on the signed-in user.
