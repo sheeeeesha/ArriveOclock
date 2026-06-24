@@ -273,7 +273,7 @@ function processFix(pos) {
   // the ETA / "arrived" check. (Most real fixes are well under 50 m.)
   if (pos.accuracy != null && pos.accuracy > MAX_ACCURACY_M) return;
   const L = state.live;
-  updateUserLocation('activeMap', pos.lng, pos.lat);
+  updateUserLocation('activeMap', pos.lng, pos.lat, true); // follow the dot
   const now = pos.ts || Date.now();
 
   // Rolling speed: prefer device speed, else derive from displacement.

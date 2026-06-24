@@ -103,8 +103,14 @@ function getOrCreate(id) {
   map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
   map.dragRotate.disable();
   map.touchZoomRotate.disableRotation();
-  const entry = { map, markers: {}, dashTimer: null, hasRoute: false };
+  const entry = { map, markers: {}, dashTimer: null, hasRoute: false, followPausedAt: 0 };
   maps.set(id, entry);
+  // Pause auto-follow when the USER pans/zooms (gesture events carry an
+  // originalEvent; programmatic easeTo doesn't), so following the dot never
+  // fights manual exploration. Auto-follow resumes a few seconds later.
+  ['dragstart', 'zoomstart', 'rotatestart'].forEach((ev) =>
+    map.on(ev, (e) => { if (e && e.originalEvent) entry.followPausedAt = Date.now(); })
+  );
   return entry;
 }
 
@@ -219,9 +225,18 @@ export async function showRoute(containerId, origin, dest, coordinates, opts = {
   }
 }
 
-export function updateUserLocation(containerId, lng, lat) {
+export function updateUserLocation(containerId, lng, lat, follow) {
   const entry = maps.get(containerId);
-  if (entry?.markers?.here) entry.markers.here.setLngLat([lng, lat]);
+  if (!entry?.markers?.here) return;
+  entry.markers.here.setLngLat([lng, lat]);
+  // Keep the dot centred during an active journey, unless the user just
+  // panned/zoomed (then back off for a few seconds so we don't yank the view).
+  if (follow && entry.map) {
+    const pausedRecently = entry.followPausedAt && (Date.now() - entry.followPausedAt < 12000);
+    if (!pausedRecently) {
+      try { entry.map.easeTo({ center: [lng, lat], duration: 900 }); } catch { /* ignore */ }
+    }
+  }
 }
 
 // Build a geographic circle polygon (so it scales with zoom, like a real
