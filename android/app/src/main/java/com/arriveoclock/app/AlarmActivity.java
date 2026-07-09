@@ -47,6 +47,9 @@ public class AlarmActivity extends Activity {
         if (body == null) body = "You're arriving at your stop.";
 
         setContentView(buildView(title, body));
+        // The notification is already ringing (insistent alarm sound). Cancel it
+        // so we hand the ringing off to AlarmRinger cleanly instead of doubling.
+        try { AlarmReceiver.cancelNotification(this); } catch (Exception ignored) {}
         AlarmRinger.start(this);
 
         // Safety net: never ring forever.

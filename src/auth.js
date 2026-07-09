@@ -3,8 +3,9 @@ import { DEMO } from './config.js';
 import { state } from './state.js';
 import { isNative } from './native.js';
 
-// Deep link the native app handles after Google OAuth (registered as an
-// intent-filter in AndroidManifest + allow-listed in Supabase redirect URLs).
+// Deep link the native app handles after Google OAuth. Registered as an
+// intent-filter in AndroidManifest (Android) and CFBundleURLTypes in Info.plist
+// (iOS), and allow-listed in the Supabase project's redirect URLs.
 const NATIVE_REDIRECT = 'com.arriveoclock.app://auth-callback';
 
 // ---------------------------------------------------------------------------

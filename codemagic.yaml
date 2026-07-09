@@ -90,3 +90,83 @@ workflows:
     # Download the .aab from "Artifacts" and upload it to the Play Console, or
     # wire automatic publishing with a publishing.google_play block + a
     # service-account JSON (docs.codemagic.io/yaml-publishing/google-play).
+
+  # ---------------------------------------------------------------------------
+  # iOS build. Runs on a Mac (required for Xcode). Two modes:
+  #
+  #  • SIGNED (App Store / TestFlight / device): set up code signing in
+  #    Codemagic — add the App Store Connect integration, then create an
+  #    environment group named "ios_signing" and enable automatic code signing
+  #    (Codemagic → your app → Settings → Code signing identities). With signing
+  #    present this archives a real, installable .ipa.
+  #  • COMPILE-CHECK (no Apple account yet): with no signing configured it still
+  #    builds with CODE_SIGNING_ALLOWED=NO to prove the native code + plugins
+  #    compile. That output is NOT installable — iOS requires signing to run on a
+  #    device — but it validates the whole app end to end in CI.
+  #
+  # A physical iPhone + an Apple Developer account ($99/yr) is unavoidable to run
+  # on a real device; there is no debug-sideload shortcut like Android's.
+  # ---------------------------------------------------------------------------
+  ios:
+    name: ArriveO'Clock iOS
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      node: 20
+      xcode: latest
+      cocoapods: default
+      groups:
+        - supabase        # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.arriveoclock.app"
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Clean stale build artifacts
+        script: rm -rf dist node_modules/.vite ios/App/App/public
+      - name: Build web (Vite)
+        script: npm run build
+      - name: Capacitor sync → iOS
+        script: npx cap sync ios
+      - name: Ensure the native Alarm plugin stays registered
+        # cap sync regenerates packageClassList from npm packages only, dropping
+        # our app-local AlarmPlugin — re-add it so the "Alarm" JS plugin resolves.
+        script: |
+          node -e "const fs=require('fs');const f='ios/App/App/capacitor.config.json';const c=JSON.parse(fs.readFileSync(f));c.packageClassList=c.packageClassList||[];if(!c.packageClassList.includes('AlarmPlugin')){c.packageClassList.push('AlarmPlugin');fs.writeFileSync(f,JSON.stringify(c,null,2));}console.log('packageClassList:',c.packageClassList);"
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install
+      - name: Set up code signing (if configured)
+        script: |
+          if [ -n "$CM_CERTIFICATE" ] || xcode-project use-profiles 2>/dev/null; then
+            echo "Signing profiles available."
+          else
+            echo "No signing set up — will build unsigned (compile check only)."
+          fi
+      - name: Build iOS app
+        script: |
+          set -e
+          if xcode-project use-profiles >/dev/null 2>&1 && ls $HOME/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision >/dev/null 2>&1; then
+            echo "Signing present → archiving a distributable .ipa"
+            xcode-project build-ipa \
+              --workspace "$XCODE_WORKSPACE" \
+              --scheme "$XCODE_SCHEME"
+          else
+            echo "No signing → compile-only build to validate the code"
+            xcodebuild \
+              -workspace "$XCODE_WORKSPACE" \
+              -scheme "$XCODE_SCHEME" \
+              -configuration Debug \
+              -sdk iphoneos \
+              -destination generic/platform=iOS \
+              CODE_SIGNING_ALLOWED=NO \
+              build
+          fi
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    # A produced .ipa (signed mode) can be published to TestFlight with a
+    # publishing.app_store_connect block (docs.codemagic.io/yaml-publishing/app-store-connect).
