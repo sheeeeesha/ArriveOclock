@@ -2,7 +2,8 @@ import { state, distFromKm, speedFromKmh } from './state.js';
 import { getCurrentPosition, geolocationAvailable, watchPosition } from './geolocation.js';
 import { isNative, platform, startBackgroundTracking, stopBackgroundTracking, fireNativeAlarm, scheduleBackupAlarm, cancelBackupAlarm } from './native.js';
 import { updateUserLocation } from './map.js';
-import { playTone, stopTone } from './sound.js';
+import { playTone, stopTone, playRingtone } from './sound.js';
+import { ringtonePath, getRingtone } from './ringtone.js';
 import { updateJourney } from './db.js';
 import { haversine } from './directions.js';
 
@@ -128,7 +129,12 @@ function refreshBackup() {
   if (backupFireMs != null && Math.abs(whenMs - backupFireMs) < 20000) return; // avoid churn
   backupFireMs = whenMs;
   const dest = state.dest?.name || 'your stop';
-  scheduleBackupAlarm(whenMs, 'Almost there', `You're arriving at ${dest} in about ${Math.round(leadMin)} min.`);
+  scheduleBackupAlarm(
+    whenMs,
+    'Almost there',
+    `You're arriving at ${dest} in about ${Math.round(leadMin)} min.`,
+    ringtonePath()
+  );
 }
 
 function fire() {
@@ -147,10 +153,12 @@ function fire() {
     // Ring the native full-screen alarm NOW (alarm stream, over the lock screen).
     // fireNativeAlarm cancels any pending OS backstop before firing, so the live
     // ring and the backstop can't double up — exactly one alarm.
-    fireNativeAlarm('Almost there', body);
+    fireNativeAlarm('Almost there', body, ringtonePath());
   } else {
     if (state.vibrate && navigator.vibrate) navigator.vibrate([500, 250, 500, 250, 500]);
-    playTone(state.tone);
+    // A chosen song wins over the synthesised tones on web too.
+    if (getRingtone()) playRingtone();
+    else playTone(state.tone);
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('Almost there', { body });
     }

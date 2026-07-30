@@ -4,8 +4,11 @@
 // previewTone() plays one cycle (tapping a tone in Settings).
 // ---------------------------------------------------------------------------
 
+import { previewSrc } from './ringtone.js';
+
 let ctx = null;
 let loopTimer = null;
+let songEl = null; // <audio> for a chosen song ringtone
 
 function audio() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -65,9 +68,40 @@ export function previewTone(name) {
   playCycle(def);
 }
 
+// --- Chosen song ringtones (see ringtone.js) -------------------------------
+// Used by the in-page alarm on web, and for previewing the pick in Settings.
+// On native the song is played by the OS alarm itself, not from here.
+
+export function playRingtone({ loop = true, seconds = 0 } = {}) {
+  stopTone();
+  const src = previewSrc();
+  if (!src) return false;
+  songEl = new Audio(src);
+  songEl.loop = loop;
+  songEl.volume = 1;
+  // Autoplay can be refused until the user has interacted with the page; every
+  // caller here is a tap, so this only guards the odd edge case.
+  songEl.play().catch(() => {});
+  if (seconds > 0) setTimeout(() => stopRingtone(), seconds * 1000);
+  return true;
+}
+
+// Short taste of the chosen song when tapping it in Settings.
+export function previewRingtone() {
+  return playRingtone({ loop: false, seconds: 12 });
+}
+
+export function stopRingtone() {
+  if (songEl) {
+    try { songEl.pause(); } catch { /* already stopped */ }
+    songEl = null;
+  }
+}
+
 export function stopTone() {
   if (loopTimer) clearInterval(loopTimer);
   loopTimer = null;
+  stopRingtone();
 }
 
 export function chirp() {

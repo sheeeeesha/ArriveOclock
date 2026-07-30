@@ -1330,6 +1330,43 @@ html.lp-mode .stage { display: none !important; }
     </div>
     <div class="view-scroll">
       <div class="settings-group">
+        <div class="gh">Your song</div>
+        <div class="s-card">
+          <div class="s-row" id="ringtoneCurrent" style="display:none">
+            <div class="s-ic" data-act="ringtone:preview"><svg><use href="#i-music"/></svg></div>
+            <div class="s-body" data-act="ringtone:preview">
+              <div class="t" id="ringtoneName">—</div>
+              <div class="d" id="ringtoneMeta">Tap to preview</div>
+            </div>
+            <button class="row-edit" data-act="ringtone:clear" aria-label="Remove song"><svg><use href="#i-trash"/></svg></button>
+          </div>
+          <div class="s-row" data-act="ringtone:pick">
+            <div class="s-ic"><svg><use href="#i-music"/></svg></div>
+            <div class="s-body">
+              <div class="t">Choose from your music</div>
+              <div class="d">Any audio file already on this device</div>
+            </div>
+            <svg class="chev"><use href="#i-chevron"/></svg>
+          </div>
+          <div class="s-row" data-act="ringtone:browse">
+            <div class="s-ic"><svg><use href="#i-search"/></svg></div>
+            <div class="s-body">
+              <div class="t">Browse free music</div>
+              <div class="d">Public-domain &amp; Creative Commons</div>
+            </div>
+            <svg class="chev"><use href="#i-chevron"/></svg>
+          </div>
+        </div>
+        <div id="ringtoneBrowse" style="display:none;margin-top:var(--s-3)">
+          <div class="searchbar">
+            <svg><use href="#i-search"/></svg>
+            <input id="ringtoneSearch" placeholder="Search free music — artist, mood, title" autocomplete="off">
+          </div>
+          <div class="s-card" id="ringtoneResults" style="margin-top:var(--s-3)"></div>
+        </div>
+        <div class="keep-open" id="ringtoneStatus" style="display:none"><svg><use href="#i-info"/></svg> <span></span></div>
+      </div>
+      <div class="settings-group">
         <div class="gh">Tones — tap to preview</div>
         <div class="s-card" id="toneList"></div>
       </div>

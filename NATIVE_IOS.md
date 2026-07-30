@@ -75,4 +75,20 @@ signing to run on any real device.** There is no shortcut.
 | Backstop when JS suspended | AlarmManager exact alarm | time-sensitive notification burst |
 | Ring from *fully killed* app | ✓ (AlarmManager) | notification burst only (OS limit) |
 | Google OAuth deep link | intent-filter | `CFBundleURLTypes` scheme |
+| Custom song ringtone | ✓ live ring **and** notification | ✓ live ring (notification uses bundled tone) |
 | Secrets in bundle | none (anon key only) | none (anon key only) |
+
+## Song ringtones on iOS
+A chosen song (see the README) is stored in the app container and played by
+`AVAudioPlayer`, which handles mp3/m4a/wav at any length — so the **live ring is
+the full song**.
+
+The **notification backstop deliberately keeps the bundled tone**: iOS requires
+notification sounds to be ≤30 s, located in the bundle or `Library/Sounds`, and
+encoded as CAF/AIFF/WAV — mp3 is not supported. Rather than silently mangling
+the user's song, the burst uses the tone that is guaranteed to play. If the song
+file is ever missing or corrupt, `AlarmPlugin.swift` falls back to the bundled
+tone too — an alarm must never be silent.
+
+On Android there is no such split: the song is used for both the notification
+(via a per-sound channel and a `FileProvider` URI) and the full-screen alarm.

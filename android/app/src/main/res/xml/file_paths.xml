@@ -2,4 +2,8 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <external-path name="my_images" path="." />
     <cache-path name="my_cache_images" path="." />
+    <!-- App-private files dir: where a chosen song ringtone is stored. The
+         system UI that plays notification audio can only read it through the
+         FileProvider, so this entry must stay (see AlarmReceiver.soundUriFor). -->
+    <files-path name="app_files" path="." />
 </paths>

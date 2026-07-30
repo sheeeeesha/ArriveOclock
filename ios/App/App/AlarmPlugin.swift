@@ -40,11 +40,13 @@ public class AlarmPlugin: CAPPlugin, CAPBridgedPlugin {
         let atMs = call.getDouble("at") ?? Date().timeIntervalSince1970 * 1000
         let title = call.getString("title") ?? "Almost there"
         let body = call.getString("body") ?? "You're arriving at your stop."
+        // Absolute path to the user's chosen song, or nil for the bundled tone.
+        let sound = call.getString("sound")
         let delaySec = (atMs / 1000) - Date().timeIntervalSince1970
 
         cancelBackstop()
         if delaySec <= 0.5 {
-            ringNow(title: title, body: body)
+            ringNow(title: title, body: body, sound: sound)
         } else {
             scheduleBackstop(after: delaySec, title: title, body: body)
         }
@@ -65,7 +67,16 @@ public class AlarmPlugin: CAPPlugin, CAPBridgedPlugin {
 
     // MARK: - Live ring
 
-    private func ringNow(title: String, body: String) {
+    /// The chosen song if it's present and playable, else the bundled tone.
+    /// An alarm must never end up silent, so every failure falls back.
+    private func alarmURL(_ sound: String?) -> URL? {
+        if let path = sound, !path.isEmpty, FileManager.default.fileExists(atPath: path) {
+            return URL(fileURLWithPath: path)
+        }
+        return Bundle.main.url(forResource: "alarm", withExtension: "wav")
+    }
+
+    private func ringNow(title: String, body: String, sound: String?) {
         // Post a notification first (lock-screen visibility + sound fallback if
         // the audio session can't start).
         postNotification(title: title, body: body, after: 0.1, id: "aoc-live")
@@ -77,8 +88,17 @@ public class AlarmPlugin: CAPPlugin, CAPBridgedPlugin {
                 // .playback ignores the silent switch; .duckOthers keeps it polite.
                 try session.setCategory(.playback, options: [.duckOthers])
                 try session.setActive(true)
-                if let url = Bundle.main.url(forResource: "alarm", withExtension: "wav") {
-                    self.player = try AVAudioPlayer(contentsOf: url)
+                // AVAudioPlayer handles mp3/m4a/wav of any length, so the full
+                // song plays here — unlike the notification sound below.
+                if let url = self.alarmURL(sound) {
+                    do {
+                        self.player = try AVAudioPlayer(contentsOf: url)
+                    } catch {
+                        // Unreadable/corrupt song — retry with the bundled tone.
+                        if let fallback = Bundle.main.url(forResource: "alarm", withExtension: "wav") {
+                            self.player = try? AVAudioPlayer(contentsOf: fallback)
+                        }
+                    }
                     self.player?.numberOfLoops = -1 // loop until stopped
                     self.player?.volume = 1.0
                     self.player?.play()
@@ -122,6 +142,10 @@ public class AlarmPlugin: CAPPlugin, CAPBridgedPlugin {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
+        // Deliberately the bundled tone, NOT the user's song: iOS notification
+        // sounds must be <=30s, live in the bundle or Library/Sounds, and be
+        // CAF/AIFF/WAV (mp3 is not supported). The chosen song plays through
+        // AVAudioPlayer in ringNow() instead, which has none of those limits.
         content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm.wav"))
         if #available(iOS 15.0, *) {
             // Breaks through Focus/scheduled-summary. Requires the

@@ -81,6 +81,36 @@ low-power") so the behaviour is transparent.
 
 ---
 
+## Alarm sound — built-in tones or any song
+
+Settings → **Alarm sound** offers ten tones synthesised with the Web Audio API
+(zero audio assets to ship) and, on the native apps, **a song of your choice**:
+
+- **Choose from your music** — pick any audio file already on the device. This
+  is the one that really means *any* song, because it's your own file.
+- **Browse free music** — search a keyless, legal catalogue (the Internet
+  Archive's netlabels / Musopen / 78rpm / etree collections: public-domain and
+  Creative Commons). Picks carry their artist credit, as CC requires.
+
+It's one setting with one answer: choosing a song clears the selected tone, and
+choosing a tone clears the song.
+
+**A song is always downloaded before it can be used.** That is the whole design
+constraint — this is a commute alarm, you are frequently underground with no
+signal, so an alarm that streamed its audio would go silent exactly when it
+matters. The file is stored locally and played by the OS alarm itself; if it is
+ever missing or unplayable, both platforms fall back to the bundled tone rather
+than ring silently.
+
+> **Not integrated, deliberately:** Spotify, YouTube/YouTube Music and Apple
+> Music. Their SDKs forbid alarm use and expose no raw audio, extracting audio
+> breaks their terms, and Apple Music tracks are DRM-protected — and every one
+> of them would reintroduce the offline problem above.
+
+See [NATIVE_IOS.md](NATIVE_IOS.md) for how each platform plays it.
+
+---
+
 ## Quick start
 
 ```bash

@@ -8,8 +8,12 @@ import { getAllModes, getRoute } from './directions.js';
 import { getCurrentPosition } from './geolocation.js';
 import * as mapView from './map.js';
 import * as alarm from './alarm.js';
-import { chirp, previewTone } from './sound.js';
+import { chirp, previewTone, previewRingtone, stopRingtone } from './sound.js';
 import { isNative, openAppSettings } from './native.js';
+import {
+  getRingtone, clearRingtone, pickLocalAudio, useLocalFile,
+  searchFreeMusic, useFreeTrack,
+} from './ringtone.js';
 
 const el = (id) => document.getElementById(id);
 // Escape text before inserting via innerHTML — names/addresses come from
@@ -114,12 +118,14 @@ function renderSaved() {
 function renderTones() {
   const wrap = el('toneList');
   if (!wrap) return;
+  // A chosen song overrides the tones, so nothing here is ticked while one is set.
+  const songActive = Boolean(getRingtone());
   wrap.innerHTML = TONES.map(
     (t) => `
     <div class="s-row" data-tone="${t}">
       <div class="s-ic"><svg><use href="#i-music"/></svg></div>
       <div class="s-body"><div class="t">${t}</div></div>
-      <svg class="chev" style="opacity:${t === state.tone ? 1 : 0}" data-check><use href="#i-go"/></svg>
+      <svg class="chev" style="opacity:${!songActive && t === state.tone ? 1 : 0}" data-check><use href="#i-go"/></svg>
     </div>`
   ).join('');
 }
@@ -493,7 +499,7 @@ async function startJourney() {
   state.journeyActive = true;
   if (el('ongoingBadge')) el('ongoingBadge').style.display = 'inline-block';
   if (el('liveDest')) el('liveDest').textContent = state.dest?.name || '';
-  if (el('liveTone')) el('liveTone').textContent = state.tone;
+  if (el('liveTone')) el('liveTone').textContent = soundLabel();
   chirp();
   state.journeyId = await db.createJourney({
     originLabel: state.origin?.name,
@@ -565,7 +571,7 @@ async function resumeActiveJourney() {
   state.journeyActive = true;
   if (el('ongoingBadge')) el('ongoingBadge').style.display = 'inline-block';
   if (el('liveDest')) el('liveDest').textContent = state.dest.name;
-  if (el('liveTone')) el('liveTone').textContent = state.tone;
+  if (el('liveTone')) el('liveTone').textContent = soundLabel();
   go('active', true);
   requestWakeLock();
   if (r) mapView.showRoute('activeMap', state.origin, state.dest, r.coordinates, { live: true });
@@ -757,7 +763,7 @@ async function afterLogin() {
   if (p.theme) setTheme(p.theme);
   renderLead();
   renderUnits();
-  renderTones();
+  renderRingtone(); // also re-renders the tone list
   await Promise.all([db.getRecents(), db.getSavedPlaces()]);
   renderRecents();
   renderSaved();
@@ -816,6 +822,7 @@ const ACTIONS = {
   openLocationSettings: () => openNativeSettings(),
   openAppSettings: () => openNativeSettings(),
   shareApp: () => shareApp(),
+  ringtone: (a) => handleRingtone(a),
 };
 
 // Open the device's settings page for this app (location "Allow all the time",
@@ -840,11 +847,146 @@ async function shareApp() {
   catch { toast(url); }
 }
 
+// ===========================================================================
+// Song ringtones (see ringtone.js). The alarm sound is EITHER a built-in tone
+// OR a song — picking one clears the other, so there's a single answer to
+// "what will ring?".
+// ===========================================================================
+
+// What to show wherever the alarm sound is named.
+function soundLabel() {
+  return getRingtone()?.name || state.tone || 'Lo-fi';
+}
+
+function setRingtoneStatus(msg) {
+  const box = el('ringtoneStatus');
+  if (!box) return;
+  box.style.display = msg ? 'flex' : 'none';
+  const span = box.querySelector('span');
+  if (span) span.textContent = msg || '';
+}
+
+function renderRingtone() {
+  const r = getRingtone();
+  const row = el('ringtoneCurrent');
+  if (row) {
+    row.style.display = r ? 'flex' : 'none';
+    el('ringtoneName').textContent = r ? r.name : '—';
+    // Creative-Commons material must carry its credit.
+    el('ringtoneMeta').textContent = r
+      ? (r.attribution || 'From your device · tap to preview')
+      : 'Tap to preview';
+  }
+  if (el('soundVal')) el('soundVal').textContent = soundLabel();
+  if (el('liveTone')) el('liveTone').textContent = soundLabel();
+  renderTones(); // checkmarks depend on whether a song is active
+}
+
+async function chooseLocalSong() {
+  setRingtoneStatus('Opening your music…');
+  try {
+    const file = await pickLocalAudio();
+    if (!file) { setRingtoneStatus(''); return; }
+    setRingtoneStatus(`Saving “${file.name}”…`);
+    await useLocalFile(file);
+    renderRingtone();
+    setRingtoneStatus('');
+    toast('Alarm song set');
+    previewRingtone();
+  } catch (err) {
+    setRingtoneStatus('');
+    toast(err?.message || 'Could not use that file');
+  }
+}
+
+let freeHits = [];
+let freeAbort = null;
+let freeTimer = null;
+
+function renderFreeResults(items, note) {
+  const wrap = el('ringtoneResults');
+  if (!wrap) return;
+  if (note) {
+    wrap.innerHTML = `<div class="s-row"><div class="s-body"><div class="d">${esc(note)}</div></div></div>`;
+    return;
+  }
+  freeHits = items;
+  wrap.innerHTML = items
+    .map(
+      (h, i) => `
+    <div class="s-row" data-free-idx="${i}">
+      <div class="s-ic"><svg><use href="#i-music"/></svg></div>
+      <div class="s-body"><div class="t">${esc(h.title)}</div><div class="d">${esc(h.creator)}</div></div>
+      <svg class="chev"><use href="#i-go"/></svg>
+    </div>`
+    )
+    .join('');
+}
+
+function wireRingtoneSearch() {
+  const input = el('ringtoneSearch');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    clearTimeout(freeTimer);
+    if (freeAbort) freeAbort.abort();
+    if (q.length < 2) { renderFreeResults([], 'Type to search free music.'); return; }
+    renderFreeResults([], 'Searching…');
+    freeTimer = setTimeout(async () => {
+      freeAbort = new AbortController();
+      try {
+        const hits = await searchFreeMusic(q, freeAbort.signal);
+        renderFreeResults(hits, hits.length ? '' : 'Nothing found — try different words.');
+      } catch (err) {
+        if (err?.name !== 'AbortError') renderFreeResults([], 'Search failed — check your connection.');
+      }
+    }, 350);
+  });
+}
+
+async function useFreeHit(hit) {
+  // Downloaded up front on purpose: the alarm has to ring underground, with no
+  // signal, so nothing may depend on the network at ring time.
+  setRingtoneStatus(`Downloading “${hit.title}” for offline use…`);
+  try {
+    await useFreeTrack(hit);
+    renderRingtone();
+    setRingtoneStatus('');
+    toast('Alarm song set');
+    previewRingtone();
+  } catch (err) {
+    setRingtoneStatus('');
+    toast(err?.message || 'Download failed');
+  }
+}
+
+async function handleRingtone(action) {
+  if (action === 'pick') return chooseLocalSong();
+  if (action === 'preview') { previewRingtone(); return; }
+  if (action === 'clear') {
+    stopRingtone();
+    await clearRingtone();
+    renderRingtone();
+    toast('Back to the built-in tone');
+    return;
+  }
+  if (action === 'browse') {
+    const box = el('ringtoneBrowse');
+    if (!box) return;
+    const open = box.style.display !== 'none';
+    box.style.display = open ? 'none' : 'block';
+    if (!open) {
+      renderFreeResults([], 'Type to search free music.');
+      setTimeout(() => el('ringtoneSearch')?.focus(), 80);
+    }
+  }
+}
+
 // Reflect persisted settings on the controls that aren't auto-rendered elsewhere.
 function syncSettingsUI() {
   const vt = el('vibToggle');
   if (vt) vt.classList.toggle('on', state.vibrate !== false);
-  if (el('soundVal')) el('soundVal').textContent = state.tone || 'Lo-fi';
+  if (el('soundVal')) el('soundVal').textContent = soundLabel();
   renderLead();
   renderUnits();
 }
@@ -924,13 +1066,22 @@ function wireDelegation() {
       return;
     }
 
-    // tone pick — select, persist, and preview it once
+    // free-music result pick (by index into the in-memory results)
+    const free = t.closest?.('[data-free-idx]');
+    if (free) {
+      const hit = freeHits[+free.dataset.freeIdx];
+      if (hit) useFreeHit(hit);
+      return;
+    }
+
+    // tone pick — select, persist, and preview it once. A built-in tone and a
+    // song are mutually exclusive, so this drops any chosen song.
     const tone = t.closest?.('[data-tone]');
     if (tone) {
       state.tone = tone.dataset.tone;
       db.updateProfile({ alarm_tone: state.tone });
-      renderTones();
-      if (el('soundVal')) el('soundVal').textContent = state.tone;
+      if (getRingtone()) clearRingtone();
+      renderRingtone();
       previewTone(state.tone);
       return;
     }
@@ -976,15 +1127,18 @@ async function init() {
   // UI wiring that doesn't depend on the signed-in user.
   state.tone = 'Lo-fi';
   renderTones();
+  renderRingtone();
   renderLead();
   renderUnits();
   enableSheetDrag(el('homeSheet'));
   wireSearch();
+  wireRingtoneSearch();
   wireDelegation();
   // On native, background tracking works — the "keep screen open" web caveat
   // doesn't apply, so drop that note. Also register the OAuth deep-link handler.
   if (isNative) {
-    document.querySelector('.keep-open')?.remove();
+    // Scoped to the journey screen — other views reuse this class for hints.
+    document.querySelector('#active .keep-open')?.remove();
     auth.initNativeAuth();
   }
   // The map (and its ~800 kB MapLibre chunk) loads lazily when Home is shown —
