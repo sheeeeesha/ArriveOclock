@@ -51,7 +51,9 @@ public class AlarmActivity extends Activity {
         // so we hand the ringing off to AlarmRinger cleanly instead of doubling.
         try { AlarmReceiver.cancelNotification(this); } catch (Exception ignored) {}
         // Plays the user's chosen song when set, else the bundled tone.
-        AlarmRinger.start(this, getIntent().getStringExtra("sound"));
+        AlarmRinger.start(this,
+                getIntent().getStringExtra("sound"),
+                getIntent().getBooleanExtra("fadeIn", false));
 
         // Safety net: never ring forever.
         autoStop = this::dismiss;
@@ -62,7 +64,8 @@ public class AlarmActivity extends Activity {
     protected void onNewIntent(android.content.Intent intent) {
         super.onNewIntent(intent);
         // Re-trigger from a second fire while already showing — keep ringing.
-        AlarmRinger.start(this, intent != null ? intent.getStringExtra("sound") : null);
+        // No fade on a repeat fire; it's already been ramping.
+        AlarmRinger.start(this, intent != null ? intent.getStringExtra("sound") : null, false);
     }
 
     private View buildView(String title, String body) {

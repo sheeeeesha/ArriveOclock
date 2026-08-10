@@ -8,7 +8,25 @@ import { previewSrc } from './ringtone.js';
 
 let ctx = null;
 let loopTimer = null;
-let songEl = null; // <audio> for a chosen song ringtone
+let songEl = null;   // <audio> for a chosen song ringtone
+let fadeTimer = null;
+let fadeUntil = 0;   // while in the future, the alarm is still ramping up
+
+// "Gradually increase volume": the alarm starts near-silent and reaches full
+// over this window, so it eases you awake instead of jolting you.
+export const FADE_SEC = 20;
+
+// 0..1 multiplier for where we are in the ramp (1 once the ramp is done).
+function fadeMul() {
+  if (!fadeUntil) return 1;
+  const left = fadeUntil - Date.now();
+  if (left <= 0) return 1;
+  return Math.max(0.06, 1 - left / (FADE_SEC * 1000));
+}
+
+function beginFade(on) {
+  fadeUntil = on ? Date.now() + FADE_SEC * 1000 : 0;
+}
 
 function audio() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -42,7 +60,8 @@ function blip(freq, when, dur, wave, gain) {
   osc.type = wave;
   osc.frequency.value = freq;
   g.gain.setValueAtTime(0, when);
-  g.gain.linearRampToValueAtTime(gain, when + 0.02);
+  // Each loop re-reads the ramp, so successive cycles get progressively louder.
+  g.gain.linearRampToValueAtTime(gain * fadeMul(), when + 0.02);
   g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
   osc.connect(g).connect(a.destination);
   osc.start(when);
@@ -55,43 +74,59 @@ function playCycle(def) {
   def.notes.forEach((n, i) => blip(n, t0 + i * def.step, def.step * def.decay, def.wave, def.gain));
 }
 
-export function playTone(name) {
+export function playTone(name, { fade = false } = {}) {
   stopTone();
+  beginFade(fade);
   const def = TONE_DEFS[name] || TONE_DEFS['Lo-fi'];
   playCycle(def);
   loopTimer = setInterval(() => playCycle(def), def.notes.length * def.step * 1000 + 250);
 }
 
-// One-shot, for previewing a tone in Settings without arming a loop.
+// One-shot, for previewing a tone in Settings without arming a loop. Always at
+// full volume — a preview that starts inaudible just seems broken.
 export function previewTone(name) {
   const def = TONE_DEFS[name] || TONE_DEFS['Lo-fi'];
+  const wasFading = fadeUntil;
+  fadeUntil = 0;
   playCycle(def);
+  fadeUntil = wasFading;
 }
 
 // --- Chosen song ringtones (see ringtone.js) -------------------------------
 // Used by the in-page alarm on web, and for previewing the pick in Settings.
 // On native the song is played by the OS alarm itself, not from here.
 
-export function playRingtone({ loop = true, seconds = 0 } = {}) {
+export function playRingtone({ loop = true, seconds = 0, fade = false } = {}) {
   stopTone();
   const src = previewSrc();
   if (!src) return false;
   songEl = new Audio(src);
   songEl.loop = loop;
-  songEl.volume = 1;
+  songEl.volume = fade ? 0.06 : 1;
   // Autoplay can be refused until the user has interacted with the page; every
   // caller here is a tap, so this only guards the odd edge case.
   songEl.play().catch(() => {});
+  if (fade) {
+    const steps = 40;
+    let i = 0;
+    fadeTimer = setInterval(() => {
+      i += 1;
+      if (!songEl || i >= steps) { clearInterval(fadeTimer); fadeTimer = null; return; }
+      songEl.volume = Math.min(1, 0.06 + (i / steps) * 0.94);
+    }, (FADE_SEC * 1000) / steps);
+  }
   if (seconds > 0) setTimeout(() => stopRingtone(), seconds * 1000);
   return true;
 }
 
-// Short taste of the chosen song when tapping it in Settings.
+// Short taste of the chosen song when tapping it in Settings — never faded, so
+// the preview is audible straight away.
 export function previewRingtone() {
   return playRingtone({ loop: false, seconds: 12 });
 }
 
 export function stopRingtone() {
+  if (fadeTimer) { clearInterval(fadeTimer); fadeTimer = null; }
   if (songEl) {
     try { songEl.pause(); } catch { /* already stopped */ }
     songEl = null;
@@ -101,6 +136,7 @@ export function stopRingtone() {
 export function stopTone() {
   if (loopTimer) clearInterval(loopTimer);
   loopTimer = null;
+  fadeUntil = 0;
   stopRingtone();
 }
 

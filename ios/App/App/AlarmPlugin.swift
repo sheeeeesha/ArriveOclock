@@ -42,11 +42,14 @@ public class AlarmPlugin: CAPPlugin, CAPBridgedPlugin {
         let body = call.getString("body") ?? "You're arriving at your stop."
         // Absolute path to the user's chosen song, or nil for the bundled tone.
         let sound = call.getString("sound")
+        // "Gradually increase volume" — applies to the live ring; the
+        // notification backstop's sound is played by the system at full volume.
+        let fadeIn = call.getBool("fadeIn") ?? false
         let delaySec = (atMs / 1000) - Date().timeIntervalSince1970
 
         cancelBackstop()
         if delaySec <= 0.5 {
-            ringNow(title: title, body: body, sound: sound)
+            ringNow(title: title, body: body, sound: sound, fadeIn: fadeIn)
         } else {
             scheduleBackstop(after: delaySec, title: title, body: body)
         }
@@ -76,7 +79,10 @@ public class AlarmPlugin: CAPPlugin, CAPBridgedPlugin {
         return Bundle.main.url(forResource: "alarm", withExtension: "wav")
     }
 
-    private func ringNow(title: String, body: String, sound: String?) {
+    /// Ramp length for "gradually increase volume" — matches FADE_SEC in sound.js.
+    private static let fadeSeconds: TimeInterval = 20
+
+    private func ringNow(title: String, body: String, sound: String?, fadeIn: Bool) {
         // Post a notification first (lock-screen visibility + sound fallback if
         // the audio session can't start).
         postNotification(title: title, body: body, after: 0.1, id: "aoc-live")
@@ -100,8 +106,15 @@ public class AlarmPlugin: CAPPlugin, CAPBridgedPlugin {
                         }
                     }
                     self.player?.numberOfLoops = -1 // loop until stopped
-                    self.player?.volume = 1.0
-                    self.player?.play()
+                    if fadeIn {
+                        // Start near-silent and let AVAudioPlayer ramp it up.
+                        self.player?.volume = 0.06
+                        self.player?.play()
+                        self.player?.setVolume(1.0, fadeDuration: AlarmPlugin.fadeSeconds)
+                    } else {
+                        self.player?.volume = 1.0
+                        self.player?.play()
+                    }
                 }
             } catch {
                 CAPLog.print("AlarmPlugin: audio session failed — notification sound is the fallback", error)

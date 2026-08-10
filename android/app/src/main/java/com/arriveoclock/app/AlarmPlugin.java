@@ -30,12 +30,14 @@ public class AlarmPlugin extends Plugin {
         return PendingIntent.getBroadcast(ctx, REQ, i, flags);
     }
 
-    private Intent receiverIntent(Context ctx, String title, String body, String sound) {
+    private Intent receiverIntent(Context ctx, String title, String body, String sound, boolean fadeIn) {
         Intent i = new Intent(ctx, AlarmReceiver.class);
         i.putExtra("title", title);
         i.putExtra("body", body);
         // Absolute path to the user's chosen song, or null for the bundled tone.
         i.putExtra("sound", sound);
+        // "Gradually increase volume" — ramps the full-screen alarm's player.
+        i.putExtra("fadeIn", fadeIn);
         return i;
     }
 
@@ -46,9 +48,10 @@ public class AlarmPlugin extends Plugin {
         String title = call.getString("title", "Almost there");
         String body = call.getString("body", "You're arriving at your stop.");
         String sound = call.getString("sound", null);
+        boolean fadeIn = Boolean.TRUE.equals(call.getBoolean("fadeIn", false));
         Context ctx = getContext();
 
-        Intent i = receiverIntent(ctx, title, body, sound);
+        Intent i = receiverIntent(ctx, title, body, sound, fadeIn);
         AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
         if (am == null) { call.resolve(); return; }
 
@@ -84,7 +87,7 @@ public class AlarmPlugin extends Plugin {
     public void cancel(PluginCall call) {
         Context ctx = getContext();
         AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
-        if (am != null) am.cancel(operation(ctx, receiverIntent(ctx, "", "", null)));
+        if (am != null) am.cancel(operation(ctx, receiverIntent(ctx, "", "", null, false)));
         AlarmReceiver.cancelNotification(ctx);
         AlarmRinger.stop();
         call.resolve();

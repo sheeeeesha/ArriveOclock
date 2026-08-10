@@ -28,6 +28,7 @@ export const state = {
   leadTimeMin: 5,
   tone: 'Lo-fi',
   vibrate: true,
+  fadeIn: false, // ramp the alarm from silent to full over FADE_SEC
   units: 'km',
 
   // ui

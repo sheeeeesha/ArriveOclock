@@ -60,6 +60,7 @@ export async function loadProfile() {
       lead_time_min: 5,
       alarm_tone: 'Lo-fi',
       vibrate: true,
+      volume_fade: false,
       spotify_connected: false,
     });
     state.profile = p;
@@ -76,6 +77,10 @@ export async function updateProfile(patch) {
     LS.write('aoc_profile', state.profile);
     return;
   }
+  // Settings are reachable before sign-in completes (e.g. during onboarding),
+  // when there is no row to update yet. Keep the change in memory instead of
+  // dereferencing a null user — that threw on every preference toggle.
+  if (!state.user?.id) return;
   await supabase.from('profiles').update(patch).eq('id', state.user.id);
 }
 

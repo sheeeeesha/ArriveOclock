@@ -97,10 +97,10 @@ export async function stopBackgroundTracking() {
 // AlarmActivity launches over the app and plays on the alarm stream).
 // `sound` is an absolute path to the user's chosen song, or null for the
 // bundled tone — the native side falls back on its own if it can't play it.
-export async function fireNativeAlarm(title, body, sound = null) {
+export async function fireNativeAlarm(title, body, sound = null, fadeIn = false) {
   if (!isNative) return;
   await ensureNotifPermission();
-  try { alarmPlugin().set({ at: Date.now(), title, body, sound }); } catch { /* ignore */ }
+  try { alarmPlugin().set({ at: Date.now(), title, body, sound, fadeIn }); } catch { /* ignore */ }
 }
 
 // Schedule the native full-screen alarm for the predicted arrival time. This is
@@ -108,10 +108,10 @@ export async function fireNativeAlarm(title, body, sound = null) {
 // WebView/JS is frozen, the app is killed, or the phone is in Doze — exactly when
 // the live, fix-driven fire() can't run. The live engine reschedules this as GPS
 // refines the ETA, and cancels it when it rings live.
-export async function scheduleBackupAlarm(whenMs, title, body, sound = null) {
+export async function scheduleBackupAlarm(whenMs, title, body, sound = null, fadeIn = false) {
   if (!isNative) return;
   await ensureNotifPermission();
-  try { alarmPlugin().set({ at: whenMs, title, body, sound }); } catch { /* ignore */ }
+  try { alarmPlugin().set({ at: whenMs, title, body, sound, fadeIn }); } catch { /* ignore */ }
 }
 
 // Cancel the pending alarm AND stop any active ringing.

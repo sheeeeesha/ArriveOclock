@@ -6,6 +6,8 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 
@@ -21,8 +23,14 @@ import java.io.File;
  * an alarm must never end up silent.
  */
 final class AlarmRinger {
+    /** "Gradually increase volume" ramp length — matches FADE_SEC in sound.js. */
+    private static final long FADE_MS = 20000;
+    private static final int FADE_STEPS = 40;
+    private static final float FADE_FLOOR = 0.06f;
+
     private static MediaPlayer player;
     private static Vibrator vibrator;
+    private static Handler fadeHandler;
 
     static Uri defaultUri(Context app) {
         return Uri.parse("android.resource://" + app.getPackageName() + "/raw/alarm");
@@ -50,10 +58,30 @@ final class AlarmRinger {
     }
 
     static synchronized void start(Context context) {
-        start(context, null);
+        start(context, null, false);
     }
 
-    static synchronized void start(Context context, String soundPath) {
+    /** Ramps the player from near-silent to full over {@link #FADE_MS}. */
+    private static void startFade(final MediaPlayer mp) {
+        mp.setVolume(FADE_FLOOR, FADE_FLOOR);
+        fadeHandler = new Handler(Looper.getMainLooper());
+        final long interval = FADE_MS / FADE_STEPS;
+        fadeHandler.postDelayed(new Runnable() {
+            private int step = 0;
+
+            @Override
+            public void run() {
+                step++;
+                // Bail out if this player was replaced or stopped meanwhile.
+                if (player != mp) return;
+                float v = Math.min(1f, FADE_FLOOR + ((float) step / FADE_STEPS) * (1f - FADE_FLOOR));
+                try { mp.setVolume(v, v); } catch (Exception e) { return; }
+                if (step < FADE_STEPS && fadeHandler != null) fadeHandler.postDelayed(this, interval);
+            }
+        }, interval);
+    }
+
+    static synchronized void start(Context context, String soundPath, boolean fadeIn) {
         stop();
         Context app = context.getApplicationContext();
         try {
@@ -70,8 +98,9 @@ final class AlarmRinger {
             }
             if (mp == null) mp = open(app, null, defaultUri(app)); // bundled fallback
             if (mp != null) {
-                mp.start();
                 player = mp;
+                if (fadeIn) startFade(mp);   // must be set before start()
+                mp.start();
             }
         } catch (Exception e) {
             // Audio failed entirely — vibration below still provides feedback.
@@ -92,6 +121,10 @@ final class AlarmRinger {
     }
 
     static synchronized void stop() {
+        if (fadeHandler != null) {
+            try { fadeHandler.removeCallbacksAndMessages(null); } catch (Exception ignored) {}
+            fadeHandler = null;
+        }
         if (player != null) {
             try { player.stop(); } catch (Exception ignored) {}
             try { player.release(); } catch (Exception ignored) {}

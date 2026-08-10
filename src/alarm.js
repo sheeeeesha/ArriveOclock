@@ -133,7 +133,8 @@ function refreshBackup() {
     whenMs,
     'Almost there',
     `You're arriving at ${dest} in about ${Math.round(leadMin)} min.`,
-    ringtonePath()
+    ringtonePath(),
+    state.fadeIn
   );
 }
 
@@ -153,12 +154,12 @@ function fire() {
     // Ring the native full-screen alarm NOW (alarm stream, over the lock screen).
     // fireNativeAlarm cancels any pending OS backstop before firing, so the live
     // ring and the backstop can't double up — exactly one alarm.
-    fireNativeAlarm('Almost there', body, ringtonePath());
+    fireNativeAlarm('Almost there', body, ringtonePath(), state.fadeIn);
   } else {
     if (state.vibrate && navigator.vibrate) navigator.vibrate([500, 250, 500, 250, 500]);
     // A chosen song wins over the synthesised tones on web too.
-    if (getRingtone()) playRingtone();
-    else playTone(state.tone);
+    if (getRingtone()) playRingtone({ fade: state.fadeIn });
+    else playTone(state.tone, { fade: state.fadeIn });
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('Almost there', { body });
     }

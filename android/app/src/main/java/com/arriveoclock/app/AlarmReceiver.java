@@ -57,6 +57,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         String title = intent.getStringExtra("title");
         String body = intent.getStringExtra("body");
         String sound = intent.getStringExtra("sound");
+        boolean fadeIn = intent.getBooleanExtra("fadeIn", false);
         if (title == null) title = "Almost there";
         if (body == null) body = "You're arriving at your stop.";
 
@@ -68,6 +69,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         full.putExtra("title", title);
         full.putExtra("body", body);
         full.putExtra("sound", sound);
+        full.putExtra("fadeIn", fadeIn);
 
         int piFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) piFlags |= PendingIntent.FLAG_IMMUTABLE;
@@ -98,6 +100,10 @@ public class AlarmReceiver extends BroadcastReceiver {
         Notification n = nb.build();
         // Loop the alarm sound until the notification is dismissed or handed off
         // to AlarmActivity — a single ding is not an alarm.
+        // NOTE: "gradually increase volume" cannot apply here — the system plays
+        // channel audio and gives us no volume handle. It applies in
+        // AlarmActivity, which is the path taken when the phone is locked (i.e.
+        // when you're actually asleep and a gentle wake matters).
         n.flags |= Notification.FLAG_INSISTENT;
 
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);

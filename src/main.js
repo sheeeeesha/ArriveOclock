@@ -8,7 +8,7 @@ import { getAllModes, getRoute } from './directions.js';
 import { getCurrentPosition } from './geolocation.js';
 import * as mapView from './map.js';
 import * as alarm from './alarm.js';
-import { chirp, previewTone, previewRingtone, stopRingtone } from './sound.js';
+import { chirp, previewTone, previewRingtone, stopRingtone, FADE_SEC } from './sound.js';
 import { isNative, openAppSettings } from './native.js';
 import {
   getRingtone, clearRingtone, pickLocalAudio, useLocalFile,
@@ -759,10 +759,12 @@ async function afterLogin() {
   state.leadTimeMin = p.lead_time_min ?? 5;
   state.tone = p.alarm_tone || 'Lo-fi';
   state.vibrate = p.vibrate ?? true;
+  state.fadeIn = p.volume_fade ?? false;
   state.units = p.units || 'km';
   if (p.theme) setTheme(p.theme);
   renderLead();
   renderUnits();
+  syncToggles();
   renderRingtone(); // also re-renders the tone list
   await Promise.all([db.getRecents(), db.getSavedPlaces()]);
   renderRecents();
@@ -813,11 +815,17 @@ const ACTIONS = {
   replayOnboarding: () => replayOnboarding(),
   clearRecents: async () => { await db.clearRecents(); renderRecents(); toast('History cleared'); },
   soundSaved: () => { goBack(); toast('Sound saved'); },
-  toggleVibrate: (_a, elm) => {
+  toggleVibrate: () => {
     state.vibrate = !state.vibrate;
-    elm.classList.toggle('on', state.vibrate);
     db.updateProfile({ vibrate: state.vibrate });
+    syncToggles(); // the same switch appears on Settings AND Alarm sound
     toast(state.vibrate ? 'Vibration on' : 'Vibration off');
+  },
+  toggleFadeIn: () => {
+    state.fadeIn = !state.fadeIn;
+    db.updateProfile({ volume_fade: state.fadeIn });
+    syncToggles();
+    toast(state.fadeIn ? `Alarm fades in over ${FADE_SEC}s` : 'Alarm starts at full volume');
   },
   openLocationSettings: () => openNativeSettings(),
   openAppSettings: () => openNativeSettings(),
@@ -982,10 +990,20 @@ async function handleRingtone(action) {
   }
 }
 
+// Some switches are duplicated across screens (Vibrate lives on both Settings
+// and Alarm sound), so every copy is kept in step from the single state value.
+function syncToggles() {
+  document.querySelectorAll('[data-act="toggleVibrate"]').forEach((t) =>
+    t.classList.toggle('on', state.vibrate !== false)
+  );
+  document.querySelectorAll('[data-act="toggleFadeIn"]').forEach((t) =>
+    t.classList.toggle('on', Boolean(state.fadeIn))
+  );
+}
+
 // Reflect persisted settings on the controls that aren't auto-rendered elsewhere.
 function syncSettingsUI() {
-  const vt = el('vibToggle');
-  if (vt) vt.classList.toggle('on', state.vibrate !== false);
+  syncToggles();
   if (el('soundVal')) el('soundVal').textContent = soundLabel();
   renderLead();
   renderUnits();
@@ -1130,6 +1148,7 @@ async function init() {
   renderRingtone();
   renderLead();
   renderUnits();
+  syncToggles();
   enableSheetDrag(el('homeSheet'));
   wireSearch();
   wireRingtoneSearch();
