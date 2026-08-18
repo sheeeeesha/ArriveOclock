@@ -9,7 +9,10 @@ import { getCurrentPosition } from './geolocation.js';
 import * as mapView from './map.js';
 import * as alarm from './alarm.js';
 import { chirp, previewTone, previewRingtone, stopRingtone, FADE_SEC } from './sound.js';
-import { isNative, openAppSettings } from './native.js';
+import {
+  isNative, openAppSettings, onHardwareBack, exitApp,
+  permissionStatus, openSetting, requestBasePermissions,
+} from './native.js';
 import {
   getRingtone, clearRingtone, pickLocalAudio, useLocalFile,
   searchFreeMusic, useFreeTrack,
@@ -43,7 +46,8 @@ function go(id, fromTab) {
     if (state.origin && !state.origin.fallback) mapView.setUserMarker('homeMap', state.origin.lng, state.origin.lat, false, state.origin.accuracy);
   }
   if (id === 'search') setTimeout(() => el('searchInput')?.focus(), 80);
-  if (id === 'settings') syncSettingsUI();
+  if (id === 'settings') { syncSettingsUI(); refreshPermissions({ render: false }); }
+  if (id === 'permissions') refreshPermissions();
   if (id === 'profile') { renderStats(); renderProfile(); }
   window.scrollTo(0, 0);
 }
@@ -72,6 +76,61 @@ function tabGo(id) {
 }
 function goBack() {
   go(state.navStack.pop() || 'home', true);
+}
+
+// ===========================================================================
+// Hardware / gesture back.
+//
+// Android's back button previously closed the app from every screen. The rules
+// below mirror what the on-screen back affordance does, with two deliberate
+// exceptions: a ringing alarm ignores back entirely (you must not silence your
+// stop by reflex), and leaving the journey screen does NOT end the trip —
+// tracking continues, matching the fact that the alarm works in the background.
+// ===========================================================================
+let lastBackAt = 0;
+
+function handleHardwareBack() {
+  // 1. Alarm is ringing — back must never dismiss it.
+  if (el('alarmRing')?.classList.contains('show')) return;
+
+  // 2. A modal sheet takes back before the view does.
+  if (!el('sheetScrim')?.hidden) { closeSheet(false); return; }
+
+  const view = document.querySelector('.view.active')?.id;
+
+  // 3. Transient panels close before the view does.
+  const browse = el('ringtoneBrowse');
+  if (view === 'sound' && browse && browse.style.display !== 'none') {
+    browse.style.display = 'none';
+    return;
+  }
+  const results = el('searchResults');
+  if (view === 'search' && results && results.style.display !== 'none' && results.innerHTML) {
+    resetSearchInput();
+    return;
+  }
+
+  // 4. Per-screen navigation.
+  if (view === 'search') { searchBack(); return; }
+  if (view === 'active') {
+    // The journey keeps running; say so, because leaving looks like cancelling.
+    go('home', true);
+    toast('Still tracking — the alarm will ring');
+    return;
+  }
+  if (view === 'onboarding' || view === 'login') { confirmExit(); return; }
+  if (state.navStack.length) { goBack(); return; }
+  if (view && view !== 'home') { go('home', true); return; }
+
+  // 5. Already home — require a second press so back never exits by accident.
+  confirmExit();
+}
+
+function confirmExit() {
+  const now = Date.now();
+  if (now - lastBackAt < 2000) { exitApp(); return; }
+  lastBackAt = now;
+  toast('Press back again to exit');
 }
 
 // ===========================================================================
@@ -631,6 +690,20 @@ async function finishOnboarding() {
   try { localStorage.setItem('aoc_onboarded', '1'); } catch { /* private mode */ }
   el('onboarding').classList.remove('active');
   gate();
+  // Prime BEFORE the OS prompt — a bare system dialog with no context is the
+  // single easiest way to get denied. Android also enforces incremental
+  // requests, so this asks for foreground location + notifications only; the
+  // reliability panel walks the user to "Allow all the time" separately.
+  if (isNative) {
+    const go = await showSheet({
+      title: 'Two quick permissions',
+      body: 'ArriveO’Clock needs your location to follow the route, and notifications to sound the alarm. Without them it can’t wake you.',
+      ok: 'Continue',
+      cancel: 'Skip for now',
+    });
+    if (go) await requestBasePermissions();
+    refreshPermissions({ render: false });
+  }
   // Only pre-warm location if we actually land on home now.
   if (DEMO || state.user) locateOnHome();
 }
@@ -831,6 +904,10 @@ const ACTIONS = {
   openAppSettings: () => openNativeSettings(),
   shareApp: () => shareApp(),
   ringtone: (a) => handleRingtone(a),
+  perm: (a) => {
+    if (a === 'recheck') { refreshPermissions(); toast('Re-checked'); return; }
+    if (a && a.startsWith('fix:')) fixPermission(a.slice(4));
+  },
 };
 
 // Open the device's settings page for this app (location "Allow all the time",
@@ -1001,6 +1078,184 @@ function syncToggles() {
   );
 }
 
+
+// ===========================================================================
+// Alarm reliability: permissions.
+//
+// Location "always", notifications and battery-unrestricted all fail with the
+// SAME symptom — the alarm stays silent — and users blame the app, not Android.
+// So each is reported separately, with a route to the exact settings page.
+// ===========================================================================
+
+// Ordered by how badly the alarm breaks without them.
+const PERM_ITEMS = [
+  { key: 'fineLocation', icon: 'i-locate', title: 'Location access',
+    why: 'Needed to see where you are on the route.', target: 'app' },
+  { key: 'backgroundLocation', icon: 'i-map', title: 'Location: Allow all the time',
+    why: 'Android hides this from the popup — it can only be set here. Without it, tracking stops the moment your screen locks.', target: 'app' },
+  { key: 'notifications', icon: 'i-bell', title: 'Notifications',
+    why: 'Carries the alarm itself and the tracking notice. If off, background tracking stops.', target: 'notifications' },
+  { key: 'batteryUnrestricted', icon: 'i-bolt', title: 'Battery: unrestricted',
+    why: 'Xiaomi, Samsung, OnePlus, Oppo, Vivo and Realme kill the tracking service without this.', target: 'battery' },
+  { key: 'exactAlarms', icon: 'i-alarm', title: 'Alarms & reminders',
+    why: 'Lets the alarm fire at an exact time even in Doze.', target: 'exactAlarm' },
+];
+
+let permCache = null;
+
+async function refreshPermissions({ render = true } = {}) {
+  permCache = await permissionStatus();
+  if (render) renderPermissions();
+  updatePermSummary();
+  return permCache;
+}
+
+function updatePermSummary() {
+  const badge = el('permSummary');
+  if (!badge || !permCache) return;
+  if (!permCache.supported) { badge.textContent = 'Not applicable on web'; return; }
+  const missing = PERM_ITEMS.filter((i) => !permCache[i.key]).length;
+  badge.textContent = missing ? `${missing} need${missing === 1 ? 's' : ''} attention` : 'All set';
+}
+
+function renderPermissions() {
+  const wrap = el('permList');
+  if (!wrap) return;
+  if (!permCache) { wrap.innerHTML = '<div class="s-row"><div class="s-body"><div class="d">Checking…</div></div></div>'; return; }
+  if (!permCache.supported) {
+    wrap.innerHTML = '<div class="s-row"><div class="s-body"><div class="t">Nothing to grant here</div><div class="d">These are native permissions — they apply in the installed app.</div></div></div>';
+    return;
+  }
+  wrap.innerHTML = PERM_ITEMS.map((item) => {
+    const ok = Boolean(permCache[item.key]);
+    return `
+    <div class="s-row ${ok ? '' : 'perm-bad'}" ${ok ? '' : `data-act="perm:fix:${item.key}"`}>
+      <div class="s-ic"><svg><use href="#${item.icon}"/></svg></div>
+      <div class="s-body">
+        <div class="t">${esc(item.title)}</div>
+        <div class="d">${esc(ok ? 'Granted' : item.why)}</div>
+      </div>
+      <span class="perm-pill ${ok ? 'ok' : 'bad'}">${ok ? 'On' : 'Fix'}</span>
+    </div>`;
+  }).join('');
+}
+
+async function fixPermission(key) {
+  const item = PERM_ITEMS.find((i) => i.key === key);
+  if (!item) return;
+  await openSetting(item.target);
+  // The user leaves for Settings; re-check when they come back.
+  toast('Switch it on, then return here');
+}
+
+// ---------------------------------------------------------------------------
+// In-app confirm sheet. Replaces window.confirm(), which in a WebView renders
+// as a bare Chrome dialog captioned with the localhost origin.
+// ---------------------------------------------------------------------------
+let sheetResolve = null;
+
+function showSheet({ title, body, ok = 'Open Settings', cancel = 'Not now' }) {
+  return new Promise((resolve) => {
+    const scrim = el('sheetScrim');
+    if (!scrim) { resolve(false); return; }
+    el('csTitle').textContent = title;
+    el('csBody').textContent = body;
+    el('csOk').textContent = ok;
+    el('csCancel').textContent = cancel;
+    scrim.hidden = false;
+    sheetResolve = resolve;
+    setTimeout(() => el('csOk')?.focus(), 40);
+  });
+}
+
+function closeSheet(result) {
+  const scrim = el('sheetScrim');
+  if (scrim) scrim.hidden = true;
+  const r = sheetResolve;
+  sheetResolve = null;
+  if (r) r(result);
+}
+
+function wireSheet() {
+  el('csOk')?.addEventListener('click', () => closeSheet(true));
+  el('csCancel')?.addEventListener('click', () => closeSheet(false));
+  el('sheetScrim')?.addEventListener('click', (e) => {
+    if (e.target === el('sheetScrim')) closeSheet(false);
+  });
+  // The background watcher can only report this at runtime; prompt in-app.
+  window.addEventListener('aoc:location-denied', async () => {
+    if (sheetResolve) return; // already asking
+    const go = await showSheet({
+      title: 'Allow location all the time',
+      body: 'To wake you with the screen locked, ArriveO’Clock needs location set to “Allow all the time”. Android hides that option from the popup, so it has to be switched on in Settings.',
+    });
+    if (go) openSetting('app');
+  });
+}
+
+
+// ===========================================================================
+// Keyboard operability.
+//
+// Most rows in this app are clickable <div>s driven by the delegated handler
+// below — 19 in the static markup and many more rendered at runtime (recents,
+// saved places, tones, search hits, permissions). None were focusable and there
+// were no key handlers, so the whole app was unusable without a touchscreen.
+//
+// Rather than rewrite every row as a <button> (which would mean unpicking the
+// layout CSS), interactive rows are given button semantics and Enter/Space is
+// translated into a click. A MutationObserver covers the dynamic ones.
+// ===========================================================================
+const INTERACTIVE_SEL = [
+  '[data-act]', '[data-pick]', '[data-tone]', '[data-result-idx]',
+  '[data-free-idx]', '[data-lead]', '[data-unit]', '[data-icon]',
+  '[data-th]', '[data-go]', '[data-edit]', '[data-mode]',
+].join(',');
+
+const NATIVELY_INTERACTIVE = 'button, a[href], input, select, textarea';
+
+function enhanceInteractive(root) {
+  const scope = root && root.querySelectorAll ? root : document;
+  let nodes = scope.querySelectorAll(INTERACTIVE_SEL);
+  nodes.forEach((node) => {
+    if (node.matches(NATIVELY_INTERACTIVE)) return; // already operable
+    if (!node.hasAttribute('tabindex')) node.setAttribute('tabindex', '0');
+    if (!node.hasAttribute('role')) node.setAttribute('role', 'button');
+  });
+  // The root itself may be an interactive node added wholesale.
+  if (root instanceof HTMLElement && root.matches?.(INTERACTIVE_SEL)
+      && !root.matches(NATIVELY_INTERACTIVE)) {
+    if (!root.hasAttribute('tabindex')) root.setAttribute('tabindex', '0');
+    if (!root.hasAttribute('role')) root.setAttribute('role', 'button');
+  }
+}
+
+function wireKeyboard() {
+  enhanceInteractive(document);
+
+  // Rows are re-rendered constantly via innerHTML; keep new ones operable.
+  try {
+    new MutationObserver((records) => {
+      for (const rec of records) {
+        for (const node of rec.addedNodes) {
+          if (node.nodeType === 1) enhanceInteractive(node);
+        }
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  } catch { /* very old webview — static rows still work */ }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    if (t.matches(NATIVELY_INTERACTIVE)) return; // browser handles these
+    const hit = t.closest(INTERACTIVE_SEL);
+    if (!hit) return;
+    e.preventDefault(); // Space would otherwise scroll the page
+    hit.click();
+  });
+}
+
 // Reflect persisted settings on the controls that aren't auto-rendered elsewhere.
 function syncSettingsUI() {
   syncToggles();
@@ -1153,6 +1408,19 @@ async function init() {
   wireSearch();
   wireRingtoneSearch();
   wireDelegation();
+  wireSheet();
+  wireKeyboard();
+  onHardwareBack(handleHardwareBack);
+  // Escape closes the sheet for keyboard users.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !el('sheetScrim')?.hidden) closeSheet(false);
+  });
+  // Permissions get revoked by the OS after periods of non-use, and the user
+  // may have just returned from Settings — so re-check whenever we resume.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshPermissions({ render: document.querySelector('.view.active')?.id === 'permissions' });
+  });
+  refreshPermissions({ render: false });
   // On native, background tracking works — the "keep screen open" web caveat
   // doesn't apply, so drop that note. Also register the OAuth deep-link handler.
   if (isNative) {

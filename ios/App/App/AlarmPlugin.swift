@@ -3,6 +3,8 @@ import Capacitor
 import AVFoundation
 import AudioToolbox
 import UserNotifications
+import CoreLocation
+import UIKit
 
 /**
  * iOS arrival alarm — mirrors the Android Alarm plugin's JS contract:
@@ -29,7 +31,9 @@ public class AlarmPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "set", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "cancel", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "permissions", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "openSetting", returnType: CAPPluginReturnPromise)
     ]
 
     private static let backstopIds = (0..<4).map { "aoc-backstop-\($0)" }
@@ -176,5 +180,45 @@ public class AlarmPlugin: CAPPlugin, CAPBridgedPlugin {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: AlarmPlugin.backstopIds + ["aoc-live"])
         center.removeDeliveredNotifications(withIdentifiers: AlarmPlugin.backstopIds + ["aoc-live"])
+    }
+
+    // MARK: - Alarm-reliability permissions
+
+    /// Mirrors the Android contract so the JS permission panel is shared. iOS has
+    /// no battery-optimisation or exact-alarm concept, so those report true —
+    /// the OS manages them and there is nothing for the user to fix.
+    @objc func permissions(_ call: CAPPluginCall) {
+        let status: CLAuthorizationStatus
+        if #available(iOS 14.0, *) {
+            status = CLLocationManager().authorizationStatus
+        } else {
+            status = CLLocationManager.authorizationStatus()
+        }
+        let foreground = status == .authorizedWhenInUse || status == .authorizedAlways
+        let always = status == .authorizedAlways
+
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let notifs = settings.authorizationStatus == .authorized
+                || settings.authorizationStatus == .provisional
+            call.resolve([
+                "fineLocation": foreground,
+                "backgroundLocation": always,
+                "notifications": notifs,
+                "batteryUnrestricted": true,
+                "exactAlarms": true
+            ])
+        }
+    }
+
+    /// iOS exposes a single per-app settings page; every target lands there.
+    @objc func openSetting(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let url = URL(string: UIApplication.openSettingsURLString),
+                  UIApplication.shared.canOpenURL(url) else {
+                call.reject("Could not open settings")
+                return
+            }
+            UIApplication.shared.open(url, options: [:]) { _ in call.resolve() }
+        }
     }
 }
