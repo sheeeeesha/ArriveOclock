@@ -1,16 +1,20 @@
 ext {
-    minSdkVersion = 22
-    compileSdkVersion = 34
-    targetSdkVersion = 34
-    androidxActivityVersion = '1.8.0'
-    androidxAppCompatVersion = '1.6.1'
-    androidxCoordinatorLayoutVersion = '1.2.0'
-    androidxCoreVersion = '1.12.0'
-    androidxFragmentVersion = '1.6.2'
+    // Capacitor 8 / Android 16. minSdk 24 and compile+target 36 are required by
+    // Capacitor 8, and target 36 is what Google Play requires from 31 Aug 2026.
+    minSdkVersion = 24
+    compileSdkVersion = 36
+    targetSdkVersion = 36
+    // AndroidX versions taken from the Capacitor 8 module defaults so the app
+    // and the Capacitor runtime agree rather than resolving to a mismatch.
+    androidxActivityVersion = '1.11.0'
+    androidxAppCompatVersion = '1.7.1'
+    androidxCoordinatorLayoutVersion = '1.3.0'
+    androidxCoreVersion = '1.17.0'
+    androidxFragmentVersion = '1.8.9'
     coreSplashScreenVersion = '1.0.1'
-    androidxWebkitVersion = '1.9.0'
+    androidxWebkitVersion = '1.14.0'
     junitVersion = '4.13.2'
-    androidxJunitVersion = '1.1.5'
-    androidxEspressoCoreVersion = '3.5.1'
-    cordovaAndroidVersion = '10.1.1'
+    androidxJunitVersion = '1.3.0'
+    androidxEspressoCoreVersion = '3.7.0'
+    cordovaAndroidVersion = '14.0.1'
 }

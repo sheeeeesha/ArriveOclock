@@ -9,3 +9,6 @@ dist
 .claude/launch.json
 
 .vercel
+
+# Supabase CLI scratch
+supabase/.temp/

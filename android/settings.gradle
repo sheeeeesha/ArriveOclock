@@ -1,3 +1,11 @@
+// Capacitor 8's plugin modules compile against Java 21. Rather than require every
+// machine (and CI image) to happen to have JDK 21 installed, let Gradle resolve
+// and provision a matching toolchain itself — a JDK-17-only machine otherwise
+// fails with "Cannot find a Java installation ... languageVersion=21".
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
 include ':app'
 include ':capacitor-cordova-android-plugins'
 project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
