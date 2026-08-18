@@ -11,8 +11,8 @@ workflows:
     name: ArriveO'Clock Android (debug)
     max_build_duration: 60
     environment:
-      node: 20
-      java: 17
+      node: 22
+      java: 21
       groups:
         # Create a variable group named "supabase" in Codemagic with:
         #   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
@@ -56,8 +56,8 @@ workflows:
     name: ArriveO'Clock Android (release AAB)
     max_build_duration: 60
     environment:
-      node: 20
-      java: 17
+      node: 22
+      java: 21
       groups:
         - supabase        # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
     scripts:
@@ -112,7 +112,7 @@ workflows:
     max_build_duration: 90
     instance_type: mac_mini_m2
     environment:
-      node: 20
+      node: 22
       xcode: latest
       cocoapods: default
       groups:
