@@ -121,7 +121,12 @@ export function initLanding() {
     // --- Journey: pinned, route draws + pin travels + steps reveal -----------
     if (q('.lp-journey-pin') && q('#lp-route-line')) {
       const jtl = gsap.timeline({
-        scrollTrigger: { trigger: '.lp-journey-pin', start: 'top top', end: '+=160%', scrub: .8, pin: true, anticipatePin: 1, refreshPriority: 2 },
+        scrollTrigger: {
+          trigger: '.lp-journey-pin', start: 'top top',
+          // px from the viewport, never a % of the (spacer-inflated) trigger.
+          end: () => '+=' + Math.round(window.innerHeight * 1.6),
+          scrub: .8, pin: true, anticipatePin: 1, invalidateOnRefresh: true, refreshPriority: 2,
+        },
       });
       gsap.set('.lp-jstep', { opacity: .2, y: 18 });
       jtl.fromTo('#lp-route-line', { drawSVG: '0%' }, { drawSVG: '100%', ease: 'none' }, 0)
@@ -133,7 +138,11 @@ export function initLanding() {
     if (q('.lp-statement-text')) {
       gsap.fromTo('.lp-statement-text', { scale: .55, opacity: .12 }, {
         scale: 1, opacity: 1, ease: 'none',
-        scrollTrigger: { trigger: '.lp-statement', start: 'top top', end: '+=120%', scrub: true, pin: true, refreshPriority: 1 },
+        scrollTrigger: {
+          trigger: '.lp-statement', start: 'top top',
+          end: () => '+=' + Math.round(window.innerHeight * 1.2),
+          scrub: true, pin: true, invalidateOnRefresh: true, refreshPriority: 1,
+        },
       });
     }
 
@@ -168,10 +177,17 @@ export function initLanding() {
       });
     }
 
-    // Recompute positions once fonts/images settle.
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => ScrollTrigger.refresh());
-    window.addEventListener('load', () => ScrollTrigger.refresh());
-    setTimeout(() => ScrollTrigger.refresh(), 400);
+    // Recompute once things settle, and on resize since the pin ends are derived
+    // from innerHeight. Debounced — repeated refreshes are what let the old
+    // percentage-based ends compound in the first place.
+    let refreshT = null;
+    const refresh = () => {
+      clearTimeout(refreshT);
+      refreshT = setTimeout(() => ScrollTrigger.refresh(), 200);
+    };
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(refresh);
+    window.addEventListener('load', refresh);
+    window.addEventListener('resize', refresh);
   } catch (err) {
     // Never let an animation error hide the page.
     if (window.console) console.warn('landing animations skipped:', err);
