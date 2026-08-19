@@ -67,12 +67,12 @@ export async function startBackgroundTracking(onLoc) {
           // prompt — the user can only pick "While using" there. Background
           // access must be flipped on in Settings; route them there.
           if (error.code === 'NOT_AUTHORIZED') {
+            // Surfaced as an in-app sheet by main.js. window.confirm() renders
+            // as a bare Chrome dialog captioned with the localhost origin, which
+            // reads as a scam prompt at the exact moment we ask for the app's
+            // most sensitive permission.
             try {
-              const ok = window.confirm(
-                'To wake you with the screen locked, ArriveO’Clock needs location set to “Allow all the time”.\n\n' +
-                'Android hides that option from the popup — open Settings to switch it on now?'
-              );
-              if (ok) BG.openSettings();
+              window.dispatchEvent(new CustomEvent('aoc:location-denied'));
             } catch { /* ignore */ }
           }
           return;
@@ -127,4 +127,80 @@ export async function openAppSettings() {
   if (!isNative) return false;
   if (!BG) BG = registerPlugin('BackgroundGeolocation');
   try { await BG.openSettings(); return true; } catch { return false; }
+}
+
+// ---------------------------------------------------------------------------
+// Hardware / gesture back button.
+//
+// Without this, Android's back button closes the app from ANY screen — the
+// clearest "unfinished app" tell there is, and mid-journey it loses the trip.
+// @capacitor/app drives this through OnBackPressedDispatcher (the modern
+// AndroidX API), so it keeps working on targetSdk 36 where Android 16 no longer
+// dispatches KEYCODE_BACK, and it cooperates with predictive back.
+// ---------------------------------------------------------------------------
+export async function onHardwareBack(handler) {
+  if (!isNative) return () => {};
+  try {
+    const { App } = await import('@capacitor/app');
+    const sub = await App.addListener('backButton', handler);
+    return () => { try { sub.remove(); } catch { /* already gone */ } };
+  } catch {
+    return () => {};
+  }
+}
+
+// Close the app (only ever called from an explicit back-on-home confirmation).
+export async function exitApp() {
+  if (!isNative) return;
+  try {
+    const { App } = await import('@capacitor/app');
+    await App.exitApp();
+  } catch { /* ignore */ }
+}
+
+// ---------------------------------------------------------------------------
+// Alarm-reliability permissions. Every one of these fails with the SAME symptom
+// — the alarm doesn't ring — so they are reported individually instead of
+// leaving the user to guess which one broke.
+// ---------------------------------------------------------------------------
+
+// Everything true on web: there is nothing to grant there, and the permission
+// panel should read as clean rather than throw five warnings at a browser user.
+const ALL_OK = {
+  fineLocation: true,
+  backgroundLocation: true,
+  notifications: true,
+  batteryUnrestricted: true,
+  exactAlarms: true,
+};
+
+export async function permissionStatus() {
+  if (!isNative) return { ...ALL_OK, supported: false };
+  try {
+    const r = await alarmPlugin().permissions();
+    return { ...ALL_OK, ...r, supported: true };
+  } catch {
+    // Older native build without the method — don't nag about what we can't read.
+    return { ...ALL_OK, supported: false };
+  }
+}
+
+// target: 'app' | 'notifications' | 'battery' | 'exactAlarm'
+export async function openSetting(target = 'app') {
+  if (!isNative) return false;
+  try { await alarmPlugin().openSetting({ target }); return true; }
+  catch { return openAppSettings(); }
+}
+
+// Foreground location + notifications only. Background location is deliberately
+// NOT requested here: Android enforces incremental requests, and from 11 up
+// "Allow all the time" is not offered in the dialog at all — it has to be set in
+// Settings, which the permission panel walks the user to.
+export async function requestBasePermissions() {
+  if (!isNative) return;
+  await ensureNotifPermission();
+  try {
+    if (!BG) BG = registerPlugin('BackgroundGeolocation');
+    if (typeof BG.requestPermissions === 'function') await BG.requestPermissions();
+  } catch { /* the watcher requests them too */ }
 }

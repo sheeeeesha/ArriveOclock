@@ -888,6 +888,52 @@ html.lp-mode .stage { display: none !important; }
 @media (max-width: 460px) {
   .lp-nav .lp-btn { height: 40px; padding: 0 16px; font-size: 13px; }
 }
+
+/* ---- Permission status pills + in-app confirm sheet ---------------------- */
+.perm-pill {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 999px; white-space: nowrap; border: 1px solid currentColor;
+}
+.perm-pill.ok   { color: var(--text-2); }
+.perm-pill.bad  { color: var(--text); background: var(--surface-sunk); }
+.s-row.perm-bad .s-ic { color: var(--text); }
+
+.sheet-scrim {
+  position: fixed; inset: 0; z-index: 200; background: var(--scrim);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: var(--s-4); padding-bottom: calc(var(--s-4) + env(safe-area-inset-bottom));
+}
+.sheet-scrim[hidden] { display: none; }
+.confirm-sheet {
+  width: 100%; max-width: 460px; background: var(--surface); color: var(--text);
+  border-radius: var(--r-3); padding: var(--s-6);
+  display: flex; flex-direction: column; gap: var(--s-3);
+  box-shadow: 0 -8px 40px rgba(0,0,0,.28);
+  animation: sheetUp .22s var(--ease);
+}
+.confirm-sheet h2 { font-family: var(--font-display); font-size: var(--t-lg); font-weight: 700; letter-spacing: -.02em; }
+.confirm-sheet p { color: var(--text-2); font-size: var(--t-sm); }
+.confirm-sheet .btn-primary, .confirm-sheet .btn-secondary { width: 100%; }
+@keyframes sheetUp { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* The app's transitions were exempt from the landing page's reduced-motion
+   rule; this covers the whole app, including the map's follow easing. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keyboard/switch users had no visible focus anywhere in the app. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+
 </style>
 </head>
 <body>
@@ -1475,6 +1521,24 @@ html.lp-mode .stage { display: none !important; }
     </div>
   </section>
 
+  <!-- ============================= ALARM RELIABILITY ============================= -->
+  <section class="view full" id="permissions">
+    <div class="page-head">
+      <button class="icon-btn back-btn" data-act="back" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <h1>Alarm reliability</h1>
+    </div>
+    <div class="view-scroll">
+      <div class="settings-group">
+        <div class="gh">Needed for the alarm to ring</div>
+        <div class="s-card" id="permList"></div>
+      </div>
+      <div class="keep-open"><svg><use href="#i-info"/></svg> <span>Each of these fails the same way — the alarm stays silent. Android hides some of them from the permission popup, so they can only be switched on in Settings.</span></div>
+      <div class="settings-group">
+        <button class="btn-secondary" data-act="perm:recheck"><svg><use href="#i-locate"/></svg> Re-check</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ============================= SETTINGS ============================= -->
   <section class="view full" id="settings">
     <div class="page-head">
@@ -1498,6 +1562,7 @@ html.lp-mode .stage { display: none !important; }
       <div class="settings-group">
         <div class="gh">Alarm</div>
         <div class="s-card">
+          <div class="s-row" data-act="go:permissions"><div class="s-ic"><svg><use href="#i-shield"/></svg></div><div class="s-body"><div class="t">Alarm reliability</div><div class="d" id="permSummary">Check permissions</div></div><svg class="chev"><use href="#i-chevron"/></svg></div>
           <div class="s-row" data-act="go:sound"><div class="s-ic"><svg><use href="#i-music"/></svg></div><div class="s-body"><div class="t">Alarm sound</div></div><span class="val" id="soundVal">Lo-fi</span><svg class="chev"><use href="#i-chevron"/></svg></div>
           <div class="s-row"><div class="s-ic"><svg><use href="#i-clock"/></svg></div><div class="s-body"><div class="t">Lead time</div><div class="d">Ring before arrival</div></div>
             <div class="segment" id="leadSeg" style="width:188px">
@@ -1536,15 +1601,25 @@ html.lp-mode .stage { display: none !important; }
   </section>
 
   <!-- ============================= ALARM RING OVERLAY ============================= -->
-  <div id="alarmRing">
+  <div id="alarmRing" role="alertdialog" aria-live="assertive" aria-labelledby="alarmDest">
     <div class="ring-ic"><svg viewBox="0 0 24 24"><use href="#i-bell"/></svg></div>
     <h1>Almost there</h1>
     <p>You arrive at <b id="alarmDest">your stop</b> in about 5 minutes. Time to get ready.</p>
     <button class="ring-btn" data-act="dismiss">Dismiss</button>
   </div>
 
+  <!-- ============================= CONFIRM SHEET ============================= -->
+  <div id="sheetScrim" class="sheet-scrim" hidden>
+    <div class="confirm-sheet" role="dialog" aria-modal="true" aria-labelledby="csTitle" aria-describedby="csBody">
+      <h2 id="csTitle"></h2>
+      <p id="csBody"></p>
+      <button class="btn-primary" id="csOk"></button>
+      <button class="btn-secondary" id="csCancel">Not now</button>
+    </div>
+  </div>
+
   <!-- ============================= TOAST ============================= -->
-  <div id="toast"></div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- ============================= TAB BAR ============================= -->
   <nav class="tabbar" id="tabbar">
