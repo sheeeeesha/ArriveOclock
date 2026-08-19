@@ -1410,6 +1410,9 @@ async function init() {
   wireDelegation();
   wireSheet();
   wireKeyboard();
+  // Version + build stamp, both injected at build time — see vite.config.js.
+  // The version is read from build.gradle so it can never drift from the APK.
+  if (el('appVersion')) el('appVersion').textContent = `v${__APP_VERSION__} · ${__BUILD_ID__}`;
   onHardwareBack(handleHardwareBack);
   // Escape closes the sheet for keyboard users.
   document.addEventListener('keydown', (e) => {

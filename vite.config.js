@@ -1,4 +1,18 @@
 import { defineConfig } from 'vite';
+import { readFileSync } from 'node:fs';
+
+// The version shown in-app is read from the SAME place the Play Store gets it
+// (android/app/build.gradle), because a hardcoded string in index.html silently
+// sat at v1.0.9 for five releases while the APK itself was current — which made
+// a perfectly good build look stale during device testing.
+function androidVersionName() {
+  try {
+    const gradle = readFileSync('android/app/build.gradle', 'utf8');
+    return /versionName\s+"([^"]+)"/.exec(gradle)?.[1] || 'dev';
+  } catch {
+    return 'dev';
+  }
+}
 
 // Unique per build. Baked into the bundle so (a) every build's entry chunk has
 // a different content hash — a STALE chunk can never be referenced by a fresh
@@ -11,6 +25,7 @@ const BUILD_ID = new Date().toISOString().slice(5, 16).replace('T', ' ');
 export default defineConfig({
   define: {
     __BUILD_ID__: JSON.stringify(BUILD_ID),
+    __APP_VERSION__: JSON.stringify(androidVersionName()),
   },
   server: {
     port: 4321,
