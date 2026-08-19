@@ -12,6 +12,7 @@ import { chirp, previewTone, previewRingtone, stopRingtone, FADE_SEC } from './s
 import {
   isNative, openAppSettings, onHardwareBack, exitApp,
   permissionStatus, openSetting, requestBasePermissions,
+  tapSelection, tapImpact, tapNotify,
 } from './native.js';
 import {
   getRingtone, clearRingtone, pickLocalAudio, useLocalFile,
@@ -654,11 +655,17 @@ function wireSearch() {
       results.style.display = 'none';
       return;
     }
+    results.style.display = 'block';
+    if (!results.innerHTML) results.innerHTML = skeletonRows(3);
     searchPlacesDebounced(q, (hits) => {
       // Keep results in memory and reference them by index — never embed
       // third-party JSON in an attribute (attribute-injection / XSS vector).
       searchHits = hits;
-      results.style.display = hits.length ? 'block' : 'none';
+      results.style.display = 'block';
+      if (!hits.length) {
+        results.innerHTML = stateMessage('Nothing found', 'Try a different spelling, or add the city name.');
+        return;
+      }
       results.innerHTML = hits
         .map(
           (h, i) => `
@@ -869,8 +876,8 @@ const ACTIONS = {
   toast: (a) => toast(a),
   mode: (_a, elm) => applyMode(elm.dataset.mode),
   swap: () => swapRoute(),
-  start: () => startJourney(),
-  stop: () => stopJourney(),
+  start: () => { tapImpact('medium'); startJourney(); },
+  stop: () => { tapImpact('heavy'); stopJourney(); },
   dismiss: () => dismissAlarm(),
   resume: () => resumeJourney(),
   locate: () => locateOnHome(true),
@@ -889,12 +896,14 @@ const ACTIONS = {
   clearRecents: async () => { await db.clearRecents(); renderRecents(); toast('History cleared'); },
   soundSaved: () => { goBack(); toast('Sound saved'); },
   toggleVibrate: () => {
+    tapSelection();
     state.vibrate = !state.vibrate;
     db.updateProfile({ vibrate: state.vibrate });
     syncToggles(); // the same switch appears on Settings AND Alarm sound
     toast(state.vibrate ? 'Vibration on' : 'Vibration off');
   },
   toggleFadeIn: () => {
+    tapSelection();
     state.fadeIn = !state.fadeIn;
     db.updateProfile({ volume_fade: state.fadeIn });
     syncToggles();
@@ -943,12 +952,37 @@ function soundLabel() {
   return getRingtone()?.name || state.tone || 'Lo-fi';
 }
 
-function setRingtoneStatus(msg) {
+function setRingtoneStatus(msg, withProgress = false) {
   const box = el('ringtoneStatus');
   if (!box) return;
   box.style.display = msg ? 'flex' : 'none';
   const span = box.querySelector('span');
   if (span) span.textContent = msg || '';
+  let bar = el('dlProgress');
+  if (withProgress && !bar) {
+    bar = document.createElement('div');
+    bar.id = 'dlProgress';
+    bar.className = 'dl-progress';
+    bar.innerHTML = '<span></span>';
+    box.appendChild(bar);
+  } else if (!withProgress && bar) {
+    bar.remove();
+  }
+}
+
+// frac is 0..1, or null when the server sends no length — in that case show an
+// indeterminate sweep instead of a percentage we'd be making up.
+function setDownloadProgress(frac) {
+  const bar = el('dlProgress');
+  if (!bar) return;
+  const fill = bar.querySelector('span');
+  if (!fill) return;
+  if (frac == null) {
+    bar.classList.add('sk');
+    fill.style.width = '100%';
+  } else {
+    fill.style.width = `${Math.round(Math.min(1, frac) * 100)}%`;
+  }
 }
 
 function renderRingtone() {
@@ -1032,9 +1066,9 @@ function wireRingtoneSearch() {
 async function useFreeHit(hit) {
   // Downloaded up front on purpose: the alarm has to ring underground, with no
   // signal, so nothing may depend on the network at ring time.
-  setRingtoneStatus(`Downloading “${hit.title}” for offline use…`);
+  setRingtoneStatus(`Downloading “${hit.title}” for offline use…`, true);
   try {
-    await useFreeTrack(hit);
+    await useFreeTrack(hit, undefined, (frac) => setDownloadProgress(frac));
     renderRingtone();
     setRingtoneStatus('');
     toast('Alarm song set');
@@ -1078,6 +1112,45 @@ function syncToggles() {
   );
 }
 
+
+
+// ===========================================================================
+// Loading / error / offline states.
+//
+// Every network-backed surface previously jumped from stale content straight to
+// new content with nothing in between — on waits as long as 30 seconds. These
+// helpers give each one a skeleton while it works and a real error with a way
+// out when it fails.
+// ===========================================================================
+
+function skeletonRows(n = 3) {
+  return Array.from({ length: n }, () => `
+    <div class="sk-row">
+      <div class="sk sk-ic"></div>
+      <div class="sk-lines"><div class="sk sk-line"></div><div class="sk sk-line short"></div></div>
+    </div>`).join('');
+}
+
+// Errors say what went wrong AND what to do about it — never a bare "failed".
+function stateMessage(title, detail, retryAction) {
+  return `
+    <div class="state-msg">
+      <div class="t">${esc(title)}</div>
+      <div>${esc(detail)}</div>
+      ${retryAction ? `<button class="btn-secondary" data-act="${esc(retryAction)}">Try again</button>` : ''}
+    </div>`;
+}
+
+// Losing signal underground is normal on this app's whole use case, so the
+// message reassures rather than alarms: the alarm does not need the network.
+function wireConnectivity() {
+  const bar = el('offlineBar');
+  if (!bar) return;
+  const paint = () => bar.classList.toggle('show', navigator.onLine === false);
+  window.addEventListener('online', () => { paint(); if (state.journeyActive) toast('Back online'); });
+  window.addEventListener('offline', paint);
+  paint();
+}
 
 // ===========================================================================
 // Alarm reliability: permissions.
@@ -1324,6 +1397,7 @@ function wireDelegation() {
     // recents / saved pick → routed through the unified chooser
     const pick = t.closest?.('[data-pick]');
     if (pick) {
+      tapSelection();
       const [kind, id] = pick.dataset.pick.split(':');
       const place = (kind === 'recent' ? state.recents : state.saved).find((p) => String(p.id) === id);
       if (place) choosePlace(place);
@@ -1333,6 +1407,7 @@ function wireDelegation() {
     // search result pick (by index into the in-memory results)
     const res = t.closest?.('[data-result-idx]');
     if (res) {
+      tapSelection();
       const hit = searchHits[+res.dataset.resultIdx];
       if (hit) choosePlace(hit);
       resetSearchInput();
@@ -1351,6 +1426,7 @@ function wireDelegation() {
     // song are mutually exclusive, so this drops any chosen song.
     const tone = t.closest?.('[data-tone]');
     if (tone) {
+      tapSelection();
       state.tone = tone.dataset.tone;
       db.updateProfile({ alarm_tone: state.tone });
       if (getRingtone()) clearRingtone();
@@ -1410,6 +1486,7 @@ async function init() {
   wireDelegation();
   wireSheet();
   wireKeyboard();
+  wireConnectivity();
   // Version + build stamp, both injected at build time — see vite.config.js.
   // The version is read from build.gradle so it can never drift from the APK.
   if (el('appVersion')) el('appVersion').textContent = `v${__APP_VERSION__} · ${__BUILD_ID__}`;

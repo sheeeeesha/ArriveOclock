@@ -204,3 +204,41 @@ export async function requestBasePermissions() {
     if (typeof BG.requestPermissions === 'function') await BG.requestPermissions();
   } catch { /* the watcher requests them too */ }
 }
+
+// ---------------------------------------------------------------------------
+// Haptics. The app only used navigator.vibrate, which is a blunt buzz and does
+// nothing on iOS. Capacitor's Haptics gives the OS-native taptic patterns, so
+// a selection feels different from an impact.
+// ---------------------------------------------------------------------------
+let HAP = null;
+async function haptics() {
+  if (!isNative) return null;
+  if (!HAP) {
+    try { HAP = await import('@capacitor/haptics'); } catch { return null; }
+  }
+  return HAP;
+}
+
+// A light tick for picking something from a list.
+export async function tapSelection() {
+  const h = await haptics();
+  try { await h?.Haptics.selectionChanged(); } catch { /* ignore */ }
+}
+
+// A firmer bump for committing to something (starting or ending a journey).
+export async function tapImpact(style = 'medium') {
+  const h = await haptics();
+  if (!h) return;
+  try {
+    const map = { light: h.ImpactStyle.Light, medium: h.ImpactStyle.Medium, heavy: h.ImpactStyle.Heavy };
+    await h.Haptics.impact({ style: map[style] || h.ImpactStyle.Medium });
+  } catch { /* ignore */ }
+}
+
+// Success / warning / error patterns, used for outcomes rather than taps.
+export async function tapNotify(kind = 'SUCCESS') {
+  const h = await haptics();
+  if (!h) return;
+  try { await h.Haptics.notification({ type: h.NotificationType[kind] || h.NotificationType.Success }); }
+  catch { /* ignore */ }
+}

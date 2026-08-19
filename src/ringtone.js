@@ -223,11 +223,36 @@ async function resolveTrack(id, signal) {
 }
 
 // Download an Archive track and make it the active ringtone.
-export async function useFreeTrack(item, signal) {
+// onProgress(fraction|null) is called as bytes arrive — these files take 20-30s
+// on a phone, which is far too long to show a static line of text.
+export async function useFreeTrack(item, signal, onProgress) {
   const { url } = await resolveTrack(item.id, signal);
   const res = await fetch(url, { signal });
   if (!res.ok) throw new Error('Download failed — check your connection');
-  const blob = await res.blob();
+
+  const total = Number(res.headers.get('content-length')) || 0;
+  let blob;
+  if (res.body && typeof onProgress === 'function') {
+    const reader = res.body.getReader();
+    const chunks = [];
+    let received = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.length;
+      if (received > MAX_BYTES) {
+        try { await reader.cancel(); } catch { /* already closed */ }
+        throw new Error('That file is larger than 30 MB — try another');
+      }
+      // No content-length (chunked) means no honest percentage — say so with
+      // null rather than inventing a number that stalls at 90%.
+      onProgress(total ? received / total : null);
+    }
+    blob = new Blob(chunks, { type: res.headers.get('content-type') || 'audio/mpeg' });
+  } else {
+    blob = await res.blob();
+  }
   return store(blob, {
     name: item.title,
     source: 'archive',

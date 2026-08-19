@@ -71,7 +71,13 @@
   --surface-sunk:  var(--ink-100);
   --text:          var(--ink-900);
   --text-2:        var(--ink-500);
-  --text-3:        var(--ink-400);
+  /* Was var(--ink-400) #8e8e8e: 3.28:1 on cards, 2.85:1 on the page ground
+     — both fail WCAG AA (4.5:1) for the small labels this token is used
+     for. #6f6f6f lifts those to 5.02 / 4.37 while staying a step lighter
+     than --text-2; matching AA on the page ground exactly would collapse
+     the two tokens into one. --ink-400 itself is unchanged, since it is
+     still correct for borders and decoration (3:1 suffices there). */
+  --text-3:        #6f6f6f;
   --line:          var(--ink-150);
   --line-strong:   var(--ink-300);
   --accent:        var(--ink-900);   /* "color" accent = ink */
@@ -122,7 +128,7 @@
   --surface-sunk:  #0a0a0a;
   --text:          #f4f4f4;
   --text-2:        #9a9a9a;
-  --text-3:        #6e6e6e;
+  --text-3:        #8a8a8a;   /* was #6e6e6e = 3.67:1 on cards; now 5.43:1 */
   --line:          #262626;
   --line-strong:   #3a3a3a;
   --accent:        #ffffff;
@@ -256,7 +262,8 @@ input { font: inherit; }
   padding-top: max(var(--s-2), var(--sa-t));
 }
 .icon-btn {
-  width: 42px; height: 42px;
+  /* 42px sat below both platform minimums (44pt iOS, 48dp Material). */
+  width: 46px; height: 46px;
   display: grid; place-items: center;
   border-radius: var(--r-2);
   background: var(--surface);
@@ -464,7 +471,7 @@ input { font: inherit; }
   font-family: var(--font-display); font-size: var(--t-lg);
   font-weight: 600; letter-spacing: -.02em;
 }
-.back-btn { width: 40px; height: 40px; margin-left: -6px; }
+.back-btn { width: 46px; height: 46px; margin-left: -8px; }
 
 /* ---------------------------------------------------------------------
    Search screen
@@ -672,7 +679,8 @@ input { font: inherit; }
 .settings-group { padding: var(--s-2) var(--s-4) 0; }
 .settings-group .gh { font-size: var(--t-xs); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); padding: var(--s-4) var(--s-1) var(--s-2); }
 .s-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); overflow: hidden; }
-.s-row { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--line); transition: background var(--dur-1); }
+.s-row {
+  min-height: 52px; display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--line); transition: background var(--dur-1); }
 .s-row:last-child { border-bottom: none; }
 .s-row:active { background: var(--surface-2); }
 .s-row .s-ic { width: 34px; height: 34px; flex: none; border-radius: var(--r-2); background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
@@ -944,6 +952,94 @@ html.lp-mode .stage { display: none !important; }
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--r-1);
+}
+
+
+/* ---- Loading / error / offline states -----------------------------------
+   The app previously jumped straight from stale content to new content with
+   nothing in between, on waits as long as 30s. Skeletons read as "arriving"
+   rather than "waiting", which is why they beat a spinner here. */
+.sk { background: var(--surface); border-radius: var(--r-2); position: relative; overflow: hidden; }
+.sk::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--surface-sunk), transparent);
+  animation: skShimmer 1.25s infinite;
+}
+@keyframes skShimmer { to { transform: translateX(100%); } }
+.sk-row { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); }
+.sk-ic { width: 38px; height: 38px; border-radius: var(--r-2); flex: none; }
+.sk-lines { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+.sk-line { height: 11px; border-radius: 999px; }
+.sk-line.short { width: 45%; }
+.sk-num { height: 26px; width: 58px; border-radius: var(--r-1); }
+
+/* Errors state what went wrong and what to do — never just "failed". */
+.state-msg { padding: var(--s-6) var(--s-4); text-align: center; color: var(--text-2); }
+.state-msg .t { font-family: var(--font-display); font-weight: 600; color: var(--text); margin-bottom: var(--s-1); }
+.state-msg .btn-secondary { margin-top: var(--s-4); }
+
+#offlineBar {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 150;
+  padding: calc(var(--s-2) + var(--sa-t)) var(--s-4) var(--s-2);
+  background: var(--text); color: var(--bg);
+  font-size: var(--t-xs); font-weight: 600; text-align: center;
+  transform: translateY(-100%); transition: transform var(--dur-2) var(--ease);
+}
+#offlineBar.show { transform: none; }
+
+/* Determinate progress — the ringtone download runs 20-30s. */
+.dl-progress { height: 4px; background: var(--surface-sunk); border-radius: 999px; overflow: hidden; margin-top: var(--s-2); }
+.dl-progress span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s linear; }
+
+/* Press feedback. The target device has no hover, so :hover alone gave rows
+   no feedback at all on tap. */
+.s-row:active, .recent-item:active, .chk:active { background: var(--surface-sunk); }
+.btn-primary:active, .btn-secondary:active, .icon-btn:active { transform: scale(.975); }
+.btn-primary, .btn-secondary, .icon-btn { transition: transform .09s var(--ease), background var(--dur-1) var(--ease); }
+
+
+/* ---- Device matrix -------------------------------------------------------
+   Five media queries covered the marketing page and almost nothing else. These
+   handle the phones the app actually ships to. */
+
+/* Small phones (360x640 and below) — the stat numerals and sheet padding were
+   sized for a 390pt-wide screen and overflow here. */
+@media (max-width: 360px) {
+  :root { --t-2xl: 26px; --t-xl: 21px; }
+  .live-stats { gap: var(--s-2); }
+  .live-stat .n { font-size: 22px; }
+  .sheet { padding-left: var(--s-3); padding-right: var(--s-3); }
+  .page-head h1 { font-size: var(--t-md); }
+  .segment button { padding: 7px 4px; font-size: var(--t-xs); }
+}
+
+/* Landscape. The active-journey screen stacks a banner, a big countdown ring
+   and a stat row vertically — on a 360px-tall window that simply doesn't fit,
+   so the ring shrinks and the content scrolls instead of clipping. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .view-scroll { padding-bottom: calc(24px + var(--sa-b)); }
+  .ring-wrap, .live-ring { transform: scale(.78); transform-origin: top center; }
+  .live-stats { flex-direction: row; gap: var(--s-2); }
+  .live-panel { overflow-y: auto; max-height: 100vh; }
+  .sheet { max-height: 88vh; overflow-y: auto; }
+  .ob-wrap { padding-top: calc(var(--s-4) + var(--sa-t)); }
+  #alarmRing .ring-ic { width: 56px; height: 56px; margin-bottom: var(--s-3); }
+  #alarmRing h1 { font-size: var(--t-lg); }
+}
+
+/* Tablets — a phone layout stretched to 1024px looks broken, so cap the
+   reading width and centre it rather than letting rows run edge to edge. */
+@media (min-width: 768px) {
+  .view-scroll > *, .sheet-inner { max-width: 620px; margin-left: auto; margin-right: auto; }
+  .login-actions { max-width: 380px; }
+}
+
+/* OS font scaling. At 200% these fixed-height controls clip their own text;
+   letting them grow keeps the label readable instead of cropped. */
+@media (min-resolution: 0.001dppx) {
+  .btn-primary, .btn-secondary { height: auto; min-height: 52px; padding-block: var(--s-3); }
+  .s-row .t, .s-row .d { overflow-wrap: anywhere; }
+  .page-head h1 { overflow-wrap: anywhere; }
 }
 
 </style>
@@ -1631,6 +1727,7 @@ html.lp-mode .stage { display: none !important; }
   </div>
 
   <!-- ============================= TOAST ============================= -->
+  <div id="offlineBar" role="status" aria-live="polite">No connection — tracking and the alarm still work</div>
   <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- ============================= TAB BAR ============================= -->
