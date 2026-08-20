@@ -789,11 +789,17 @@ html.lp-mode .stage { display: none !important; }
 .lp-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: var(--text); transform: scaleX(0); transform-origin: 0 50%; z-index: 60; }
 
 /* Hero */
-.lp-hero { position: relative; overflow: hidden; padding: clamp(52px, 8vw, 116px) 0 clamp(56px, 7vw, 96px); }
+/* Fills the frame below the 66px nav and never exceeds it. Padding is
+   HEIGHT-driven: the old clamp(52px,8vw,116px) grew with window WIDTH, so on
+   a 1920px screen it added 212px of padding to a 600px mockup and pushed the
+   subtitle off the bottom. */
+.lp-hero { position: relative; overflow: hidden; display: flex; align-items: center;
+  min-height: calc(100svh - 66px);
+  padding: clamp(24px, 3.5vh, 72px) 0 clamp(28px, 4vh, 84px); }
 .lp-hero-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
 .lp-hero-clock { position: absolute; right: -7%; top: 4%; width: min(48vw, 580px); opacity: .07; }
 .lp-grid { position: absolute; inset: 0; background-image: radial-gradient(var(--line-strong) 1px, transparent 1.4px); background-size: 30px 30px; opacity: .45; mask-image: linear-gradient(to bottom, #000, transparent 80%); -webkit-mask-image: linear-gradient(to bottom, #000, transparent 80%); }
-.lp-hero .lp-wrap { position: relative; z-index: 1; }
+.lp-hero .lp-wrap { position: relative; z-index: 1; width: 100%; }
 .lp-hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
 .lp-kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--text-2); margin-bottom: 24px; border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; }
 .lp-kicker .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--text); animation: gpsPulse 1.8s var(--ease) infinite; }
@@ -807,7 +813,7 @@ html.lp-mode .stage { display: none !important; }
 
 /* Hero phone mock */
 .lp-phonewrap { justify-self: center; }
-.lp-phone { width: clamp(220px, 24vw, 286px); aspect-ratio: 286 / 600; border-radius: 38px; background: var(--ink-900); padding: 11px; box-shadow: 0 40px 110px rgba(0,0,0,.22), 0 0 0 2px var(--ink-700); position: relative; }
+.lp-phone { height: min(600px, 54vh); width: auto; aspect-ratio: 286 / 600; border-radius: 38px; background: var(--ink-900); padding: 11px; box-shadow: 0 40px 110px rgba(0,0,0,.22), 0 0 0 2px var(--ink-700); position: relative; }
 .lp-screen { width: 100%; height: 100%; border-radius: 28px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 26px; text-align: center; }
 .lp-screen .mk { width: 64px; height: 64px; }
 .lp-screen .mk .pin { fill: var(--text); } .lp-screen .mk .face { stroke: var(--text); }
@@ -828,9 +834,12 @@ html.lp-mode .stage { display: none !important; }
    width-driven padding, which made it 1231px tall in a 900px window and
    cut 331px off the bottom while pinned. Height is now capped to the
    viewport and the padding scales with HEIGHT, not width. */
-.lp-journey-pin { height: 100vh; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 1.5vh, 20px); padding: clamp(20px, 4vh, 48px) 0; overflow: hidden; }
-.lp-route { width: min(960px, 92%); height: auto; max-height: 30vh; margin: clamp(10px, 2vh, 26px) 0 clamp(14px, 2.5vh, 34px); overflow: visible; }
+.lp-journey-pin .lp-wrap { display: flex; flex-direction: column; align-items: center; }
+.lp-journey-pin { height: 100svh; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 1.5vh, 20px); padding: clamp(20px, 4vh, 48px) 0; overflow: hidden; }
+.lp-route { width: min(960px, 92%); height: clamp(110px, 24vh, 230px); flex: none;
+  margin: clamp(8px, 1.6vh, 22px) 0 clamp(12px, 2.2vh, 30px); overflow: visible; }
 .lp-route-dot { fill: var(--surface); stroke: var(--text); stroke-width: 3; }
+.lp-journey-pin .lp-h2 { max-width: 28ch; margin-bottom: clamp(10px, 2vh, 28px); }
 .lp-journey-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(18px, 3vw, 40px); width: min(960px, 92%); }
 .lp-jstep { padding-top: 18px; border-top: 1px solid var(--line-strong); }
 .lp-jstep .n { font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .12em; color: var(--text-3); }

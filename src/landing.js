@@ -124,14 +124,27 @@ export function initLanding() {
         scrollTrigger: {
           trigger: '.lp-journey-pin', start: 'top top',
           // px from the viewport, never a % of the (spacer-inflated) trigger.
-          end: () => '+=' + Math.round(window.innerHeight * 1.6),
-          scrub: .8, pin: true, anticipatePin: 1, invalidateOnRefresh: true, refreshPriority: 2,
+          end: () => '+=' + Math.round(window.innerHeight * 2.8),
+          scrub: 1.1, pin: true, anticipatePin: 1, invalidateOnRefresh: true, refreshPriority: 2,
         },
       });
       gsap.set('.lp-jstep', { opacity: .2, y: 18 });
-      jtl.fromTo('#lp-route-line', { drawSVG: '0%' }, { drawSVG: '100%', ease: 'none' }, 0)
-         .to('#lp-route-pin', { motionPath: { path: '#lp-route-line', align: '#lp-route-line', alignOrigin: [0.5, 1] }, ease: 'none' }, 0)
-         .to('.lp-jstep', { opacity: 1, y: 0, stagger: 0.45, ease: 'power1.out' }, 0.05);
+      // The route is two symmetric cubic segments, so its three dots sit at 0,
+      // 0.5 and 1 along the path. Giving the draw and the pin an explicit
+      // duration of 1 — and placing each step at its dot's position — means a
+      // step lights exactly as the pin reaches it. Previously both tweens used
+      // GSAP's default 0.5s while the steps ran on a 0.45 stagger out to 1.45,
+      // so the route finished in the first third and the steps drifted on
+      // afterwards, unsynchronised.
+      const steps = qa('.lp-jstep');
+      jtl.fromTo('#lp-route-line', { drawSVG: '0%' }, { drawSVG: '100%', ease: 'none', duration: 1 }, 0)
+         .to('#lp-route-pin', {
+           motionPath: { path: '#lp-route-line', align: '#lp-route-line', alignOrigin: [0.5, 1] },
+           ease: 'none', duration: 1,
+         }, 0)
+         .to(steps[0], { opacity: 1, y: 0, duration: .16, ease: 'power2.out' }, 0)
+         .to(steps[1], { opacity: 1, y: 0, duration: .16, ease: 'power2.out' }, 0.5)
+         .to(steps[2], { opacity: 1, y: 0, duration: .16, ease: 'power2.out' }, 0.9);
     }
 
     // --- Pinned statement scale-in ------------------------------------------
@@ -140,7 +153,7 @@ export function initLanding() {
         scale: 1, opacity: 1, ease: 'none',
         scrollTrigger: {
           trigger: '.lp-statement', start: 'top top',
-          end: () => '+=' + Math.round(window.innerHeight * 1.2),
+          end: () => '+=' + Math.round(window.innerHeight * 1.9),
           scrub: true, pin: true, invalidateOnRefresh: true, refreshPriority: 1,
         },
       });
