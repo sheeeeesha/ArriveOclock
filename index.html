@@ -813,14 +813,69 @@ html.lp-mode .stage { display: none !important; }
 
 /* Hero phone mock */
 .lp-phonewrap { justify-self: center; }
-.lp-phone { height: min(600px, 54vh); width: auto; aspect-ratio: 286 / 600; border-radius: 38px; background: var(--ink-900); padding: 11px; box-shadow: 0 40px 110px rgba(0,0,0,.22), 0 0 0 2px var(--ink-700); position: relative; }
-.lp-screen { width: 100%; height: 100%; border-radius: 28px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 26px; text-align: center; }
-.lp-screen .mk { width: 64px; height: 64px; }
+
+/* Modern handset mockup. Everything inside is sized in cqh (1% of the phone's
+   own height) rather than px, so the whole screen scales as one piece at any
+   viewport — the previous fixed-px content was laid out for a 600px phone and
+   wrapped badly the moment the frame shrank on a short window. */
+.lp-phone {
+  height: min(620px, 56vh); width: auto; aspect-ratio: 9 / 19.5;
+  container-type: size;
+  position: relative;
+  border-radius: 13% / 6%;
+  padding: 1.15%;
+  /* Brushed rail: a light edge catching from the top-left, like real hardware. */
+  background:
+    linear-gradient(150deg, #6c6c6c 0%, #1b1b1b 16%, #050505 52%, #232323 84%, #5e5e5e 100%);
+  box-shadow: 0 42px 110px rgba(0,0,0,.55), 0 2px 5px rgba(255,255,255,.18) inset;
+}
+/* Side buttons */
+.lp-btn-vol, .lp-btn-pwr {
+  position: absolute; width: 1.6%; border-radius: 2px;
+  background: linear-gradient(180deg, #4a4a4a, #101010);
+}
+.lp-btn-vol { left: -1.4%; top: 21%; height: 13%; }
+.lp-btn-pwr { right: -1.4%; top: 27%; height: 9.5%; }
+
+.lp-screen {
+  width: 100%; height: 100%; border-radius: 12% / 5.4%;
+  background: var(--surface); overflow: hidden; position: relative;
+  display: flex; flex-direction: column;
+}
+.lp-island {
+  position: absolute; top: 1.5cqh; left: 50%; translate: -50% 0;
+  width: 32%; height: 3.4cqh; border-radius: 999px;
+  background: #000; z-index: 3;
+}
+.lp-statusbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.9cqh 7% 0; font-size: 2.1cqh; font-weight: 700;
+  letter-spacing: .01em; color: var(--text); flex: none;
+}
+.lp-sysicons { display: inline-flex; align-items: center; gap: .7cqh; }
+.lp-sysicons svg { height: 1.5cqh; width: auto; fill: var(--text); stroke: var(--text); }
+
+.lp-appbody {
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  gap: 1.5cqh; padding: 0 8%;
+}
+.lp-screen .mk { width: 12cqh; height: 12cqh; flex: none; }
 .lp-screen .mk .pin { fill: var(--text); } .lp-screen .mk .face { stroke: var(--text); }
-.lp-screen .st { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); }
-.lp-screen .bg { font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: -.03em; line-height: 1; }
-.lp-screen .sm { font-size: 13px; color: var(--text-2); }
-.lp-screen .pill { margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--accent-text); background: var(--accent); border-radius: 999px; padding: 8px 16px; }
+.lp-screen .st { font-size: 1.9cqh; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--text-3); }
+.lp-screen .bg { font-family: var(--font-display); font-weight: 700; font-size: 5.4cqh; letter-spacing: -.03em; line-height: 1.02; }
+.lp-screen .sm { font-size: 2.3cqh; color: var(--text-2); line-height: 1.35; }
+.lp-track { width: 62%; height: .9cqh; border-radius: 999px; background: var(--surface-sunk); overflow: hidden; margin-top: .4cqh; }
+.lp-track span { display: block; height: 100%; width: 72%; border-radius: 999px; background: var(--accent); }
+.lp-screen .pill {
+  margin-top: .8cqh; font-size: 2.2cqh; font-weight: 600;
+  color: var(--accent-text); background: var(--accent);
+  border-radius: 999px; padding: 1.6cqh 4cqh; white-space: nowrap;
+}
+.lp-homebar {
+  position: absolute; bottom: 1.1cqh; left: 50%; translate: -50% 0;
+  width: 34%; height: .7cqh; border-radius: 999px; background: var(--text); opacity: .28;
+}
 
 /* Marquee */
 .lp-marquee { border-block: 1px solid var(--line); padding: 16px 0; overflow: hidden; white-space: nowrap; }
@@ -1074,13 +1129,30 @@ html.lp-mode .stage { display: none !important; }
           <p class="lp-fine">Android app launching soon · locked-screen alarms.</p>
         </div>
         <div class="lp-phonewrap">
-          <div class="lp-phone"><div class="lp-screen">
-            <svg class="mk" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-            <div class="st">Arriving soon</div>
-            <div class="bg">Almost there</div>
-            <div class="sm">2 stops to Bhumkar Chowk</div>
-            <div class="pill">Wake me in 5 min</div>
-          </div></div>
+          <div class="lp-phone">
+            <span class="lp-btn-vol" aria-hidden="true"></span>
+            <span class="lp-btn-pwr" aria-hidden="true"></span>
+            <div class="lp-screen">
+              <span class="lp-island" aria-hidden="true"></span>
+              <div class="lp-statusbar" aria-hidden="true">
+                <span>9:41</span>
+                <span class="lp-sysicons">
+                  <svg viewBox="0 0 18 12"><path d="M1 9h2v3H1zM5 6.5h2V12H5zM9 4h2v8H9zM13 1.5h2V12h-2z"/></svg>
+                  <svg viewBox="0 0 16 12"><path d="M8 10.4 5.6 8a3.4 3.4 0 0 1 4.8 0zM8 6.6c-1.5 0-2.9.6-3.9 1.6L2.7 6.8A7.5 7.5 0 0 1 8 4.6c2 0 3.9.8 5.3 2.2l-1.4 1.4A5.4 5.4 0 0 0 8 6.6z"/></svg>
+                  <svg viewBox="0 0 26 12"><rect x="1" y="2" width="20" height="8" rx="2.4" fill="none" stroke-width="1.4"/><rect x="2.8" y="3.8" width="14" height="4.4" rx="1.2"/><path d="M22.6 4.6v2.8a2 2 0 0 0 0-2.8z"/></svg>
+                </span>
+              </div>
+              <div class="lp-appbody">
+                <svg class="mk" viewBox="0 0 32 32"><path class="pin" d="M16 30s11-9.6 11-18.3A11 11 0 1 0 5 11.7C5 20.4 16 30 16 30z"/><circle cx="16" cy="11" r="7" fill="var(--surface)"/><path class="face" d="M16 6.5V11l3 2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                <div class="st">Arriving soon</div>
+                <div class="bg">Almost there</div>
+                <div class="sm">2 stops to Bhumkar&nbsp;Chowk</div>
+                <div class="lp-track" aria-hidden="true"><span></span></div>
+                <div class="pill">Wake me in 5 min</div>
+              </div>
+              <span class="lp-homebar" aria-hidden="true"></span>
+            </div>
+          </div>
         </div>
       </div>
       <div class="lp-scrollcue" aria-hidden="true"><span></span></div>
